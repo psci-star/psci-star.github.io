@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research Transparency Statement Validator · Psychological Science</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+<script src="../rts-config.js"></script>
+<script src="../rts-utils.js"></script>
+<!--
+  Privacy-friendly analytics via GoatCounter (https://www.goatcounter.com/).
+  No cookies, no PII, IPs are hashed and dropped after 8 hours — fully
+  GDPR-compliant and free for non-commercial use.
+
+  This is wired to the GoatCounter site code "psci-star". For data to
+  actually be collected, that code must be registered once:
+    1. Sign up at https://www.goatcounter.com/signup
+    2. Set the site code to "psci-star" so the endpoint below resolves
+       to https://psci-star.goatcounter.com/. If that code is already
+       taken, choose another and update the data-goatcounter URL in
+       BOTH builder/index.html and validator/index.html to match.
+
+  GoatCounter records the page path automatically, so the Builder
+  (/builder/) and the Validator (/validator/) show up as separate
+  entries in the same dashboard.
+-->
+<script data-goatcounter="https://psci-star.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue: #3a5a80;
+  --blue-hover: #2c4767;
+  --blue-bg: #eef2f8;
+  --black: #111;
+  --g0: #fafaf8;
+  --g1: #f4f3ef;
+  --g2: #e6e6e0;
+  /* g3 darkened from #9a988e to meet WCAG AA on the g0 background */
+  --g3: #7a7870;
+  --g4: #5e5d57;
+  --white: #fff;
+  --green: #4a7e54;
+  --green-bg: #eef5ef;
+  --red: #b04030;
+  --red-bg: #fbeeec;
+  --amber: #a87212;
+  --amber-bg: #faf2dd;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--g0);
+  color: var(--black);
+  min-height: 100vh;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -.005em;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Header ---- */
+.header {
+  height: 54px;
+  background: var(--white);
+  border-bottom: 1px solid var(--g2);
+  display: flex;
+  align-items: center;
+  padding: 0 2rem;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.hw          { font-family: 'Inter', sans-serif; font-size: 15.5px; font-weight: 500; letter-spacing: -.01em; color: var(--black); }
+.hw-journal  { color: var(--blue); font-weight: 600; }
+.hw-sep      { color: var(--g3); font-weight: 400; margin: 0 .15rem; }
+.hdr-right   { display: flex; align-items: center; gap: .6rem; }
+
+.btn-reset, .btn-help {
+  font-family: 'Inter', sans-serif;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--g4);
+  background: var(--white);
+  border: 1px solid var(--g2);
+  padding: .4rem .85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all .12s;
+}
+.btn-reset:hover, .btn-help:hover { border-color: var(--blue); color: var(--blue); }
+
+/* ---- Layout ---- */
+.app {
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) 1.4fr;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  background: var(--white);
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---- Input panel ---- */
+.input-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  overflow: hidden;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(44, 82, 128, .1), 0 0 0 1px rgba(44, 82, 128, .08);
+  min-height: 0;
+}
+.input-top { padding: 1.75rem 2.5rem 1.25rem; flex-shrink: 0; }
+.s-title   { font-family: 'Inter', sans-serif; font-size: 24px; font-weight: 500; color: var(--black); line-height: 1.2; margin-bottom: .4rem; letter-spacing: -.018em; }
+.s-sub     { font-size: 13.5px; color: var(--g4); line-height: 1.55; font-weight: 400; }
+
+/* Bottom padding gives the textarea breathing room now that the
+   Validate / Clear button row below it has been removed (validation
+   runs automatically and Reset all lives in the header). */
+.input-mid { flex: 1; padding: 0 2.5rem 1.75rem; display: flex; flex-direction: column; min-height: 0; }
+.input-area {
+  flex: 1;
+  width: 100%;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--g2);
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--black);
+  background: var(--white);
+  outline: none;
+  resize: none;
+  transition: border-color .1s;
+  border-radius: 4px;
+}
+.input-area:focus       { border-color: var(--blue); }
+.input-area::placeholder { color: var(--g3); }
+
+
+/* ---- Results panel ---- */
+.results-panel {
+  background: var(--white);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(44, 82, 128, .1), 0 0 0 1px rgba(44, 82, 128, .08);
+  min-height: 0;
+}
+.results-top { padding: 1.75rem 2rem 1.5rem; flex: 1; }
+.p-eye       { font-family: 'Inter', sans-serif; font-size: 17px; font-weight: 500; color: var(--g4); margin-bottom: .85rem; line-height: 1.4; letter-spacing: -.01em; }
+
+/* ---- Summary bar ---- */
+.summary {
+  background: var(--white);
+  border: 1px solid var(--g2);
+  padding: 1.1rem 1.35rem;
+  margin-bottom: 1.4rem;
+  border-radius: 4px;
+}
+.summary-empty { color: var(--g4); font-size: 14.5px; line-height: 1.55; }
+.summary-bar   { height: 6px; background: var(--g2); display: flex; margin: .8rem 0 .95rem; overflow: hidden; border-radius: 1px; }
+.summary-bar-seg          { height: 100%; }
+.summary-bar-seg.s-ok      { background: var(--green); }
+.summary-bar-seg.s-review  { background: var(--amber); }
+.summary-bar-seg.s-missing { background: var(--red); }
+.summary-stats           { display: flex; flex-wrap: wrap; gap: 1.4rem; font-size: 13.5px; font-weight: 500; }
+.summary-stats .ss-item  { display: flex; align-items: center; gap: .5rem; }
+.summary-stats .ss-icon  { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; font-weight: 600; font-size: 15px; }
+.summary-stats .ss-icon.s-ok      { color: var(--green); }
+.summary-stats .ss-icon.s-review  { color: var(--amber); }
+.summary-stats .ss-icon.s-missing { color: var(--red); }
+.summary-stats .ss-label { color: var(--g4); }
+.summary-stats .ss-num   { color: var(--black); font-weight: 600; font-variant-numeric: tabular-nums; }
+.summary-stats .ss-pct   { color: var(--g4); font-variant-numeric: tabular-nums; font-weight: 400; }
+
+/* ---- Result groups ---- */
+.r-group   { margin-bottom: 1.5rem; }
+.r-group-h { font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; color: var(--black); padding-bottom: .5rem; margin-bottom: .7rem; border-bottom: 1px solid var(--g2); letter-spacing: -.01em; }
+
+/* ---- Component result cards ---- */
+.r-comp {
+  background: var(--white);
+  border: 1px solid var(--g2);
+  border-left: 3px solid var(--g2);
+  margin-bottom: .55rem;
+  padding: .95rem 1.1rem .95rem 1.2rem;
+  position: relative;
+  transition: border-color .1s;
+  border-radius: 0 4px 4px 0;
+}
+.r-comp.r-ok      { border-left-color: var(--green); }
+.r-comp.r-review  { border-left-color: var(--amber); }
+.r-comp.r-missing { border-left-color: var(--red); }
+
+.r-head   { display: flex; align-items: center; gap: .65rem; margin-bottom: .55rem; font-family: 'Inter', sans-serif; }
+.r-icon   { flex-shrink: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px; line-height: 1; }
+.r-icon.r-ok      { color: var(--green); }
+.r-icon.r-review  { color: var(--amber); }
+.r-icon.r-missing { color: var(--red); }
+.r-status         { font-size: 13px; font-weight: 600; letter-spacing: 0; }
+.r-status.r-ok      { color: var(--green); }
+.r-status.r-review  { color: var(--amber); }
+.r-status.r-missing { color: var(--red); }
+.r-label { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; color: var(--g4); margin-left: auto; letter-spacing: 0; }
+
+.r-body         { font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.65; color: var(--black); margin-bottom: .55rem; }
+.r-body.r-ok     .body-text { display: inline; }
+.r-body.r-review .body-text { background: var(--amber-bg); padding: .55rem .8rem; border-left: 2px solid var(--amber); border-radius: 0 3px 3px 0; display: block; }
+
+.r-msg { font-size: 13.5px; color: var(--g4); margin-bottom: .4rem; line-height: 1.5; }
+
+/* ---- Expected wording (shown for review/missing) ---- */
+.r-expected     { margin-top: .65rem; padding: .65rem .85rem; background: var(--g1); border-radius: 3px; font-size: 12.5px; color: var(--g4); line-height: 1.55; }
+.r-expected-h   { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500; color: var(--g4); margin-bottom: .35rem; text-transform: uppercase; letter-spacing: .04em; }
+.r-expected code { font-family: inherit; color: var(--black); display: block; padding: .15rem 0; }
+.r-expected .pl  { color: var(--blue); }
+
+/* ---- Sentence-level details (preregistration) ---- */
+.r-sentences       { margin-top: .6rem; display: flex; flex-direction: column; gap: .3rem; }
+.r-sentence        { padding: .45rem .7rem; background: var(--g1); font-size: 12.5px; line-height: 1.5; display: flex; gap: .5rem; align-items: flex-start; border-left: 2px solid var(--g2); border-radius: 0 3px 3px 0; }
+.r-sentence.r-ok      { border-left-color: var(--green);  background: var(--green-bg); }
+.r-sentence.r-review  { border-left-color: var(--amber);  background: var(--amber-bg); }
+.r-sentence-icon         { flex-shrink: 0; font-weight: 500; font-size: 13px; font-family: 'Inter', sans-serif; }
+.r-sentence-icon.r-ok      { color: var(--green); }
+.r-sentence-icon.r-review  { color: var(--amber); }
+
+/* ---- Modal (native <dialog>) ---- */
+.modal {
+  border: none;
+  padding: 0;
+  background: var(--white);
+  border-radius: 6px;
+  max-width: 580px;
+  width: calc(100% - 3rem);
+  max-height: 85vh;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .18);
+  color: var(--black);
+  overflow: hidden;
+}
+.modal::backdrop  { background: rgba(20, 18, 15, .45); backdrop-filter: blur(2px); }
+.modal[open]      { animation: slideUp .25s ease; display: flex; flex-direction: column; }
+.modal[open]::backdrop { animation: fadeIn .2s ease; }
+.modal-inner      { display: flex; flex-direction: column; max-height: 85vh; }
+.modal-head       { padding: 1.6rem 1.75rem 1rem; border-bottom: 1px solid var(--g2); position: relative; flex-shrink: 0; }
+.modal-eye        { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; color: var(--blue); margin-bottom: .35rem; }
+.modal-title      { font-family: 'Inter', sans-serif; font-size: 22px; font-weight: 500; color: var(--black); letter-spacing: -.018em; line-height: 1.2; }
+.modal-body       { padding: 1.4rem 1.75rem; overflow-y: auto; flex: 1; }
+.modal-body p     { font-family: 'Inter', sans-serif; font-size: 13.5px; line-height: 1.6; color: var(--g4); margin-bottom: .85rem; }
+.modal-body p:last-child { margin-bottom: 0; }
+.modal-body p strong     { color: var(--black); font-weight: 500; }
+.status-key       { margin: .5rem 0 1rem; border: 1px solid var(--g2); border-radius: 4px; overflow: hidden; }
+.status-key-row   { display: grid; grid-template-columns: auto 1fr; gap: .85rem; align-items: flex-start; padding: .7rem .85rem; border-bottom: 1px solid var(--g2); font-family: 'Inter', sans-serif; font-size: 12.5px; line-height: 1.5; }
+.status-key-row:last-child { border-bottom: none; }
+.status-key-icon  { font-size: 16px; font-weight: 500; line-height: 1.2; width: 1.5rem; text-align: center; flex-shrink: 0; font-family: 'Inter', sans-serif; }
+.status-key-icon.s-ok      { color: var(--green); }
+.status-key-icon.s-review  { color: var(--amber); }
+.status-key-icon.s-missing { color: var(--red); }
+.status-key-text strong { display: block; color: var(--black); font-weight: 500; margin-bottom: .1rem; }
+.status-key-text  { color: var(--g4); }
+.modal-tip        { background: var(--blue-bg); border-left: 2px solid var(--blue); padding: .75rem .95rem; border-radius: 0 4px 4px 0; font-family: 'Inter', sans-serif; font-size: 12.5px; line-height: 1.55; color: var(--g4); margin: .6rem 0; }
+.modal-tip strong { color: var(--blue); font-weight: 500; display: block; margin-bottom: .15rem; }
+.modal-foot       { padding: 1rem 1.75rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-top: 1px solid var(--g2); flex-shrink: 0; background: var(--g0); }
+.modal-feedback   { font-family: 'Inter', sans-serif; font-size: 12.5px; color: var(--g4); line-height: 1.4; }
+.modal-feedback a { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; font-weight: 500; }
+.modal-feedback a:hover { color: var(--blue-hover); }
+.modal-close      { font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 500; padding: .6rem 1.3rem; background: var(--blue); color: var(--white); border: none; cursor: pointer; border-radius: 4px; letter-spacing: -.005em; transition: background .12s; flex-shrink: 0; }
+.modal-close:hover { background: var(--blue-hover); }
+.modal-x          { position: absolute; top: 1rem; right: 1rem; width: 30px; height: 30px; background: none; border: none; font-family: 'Inter', sans-serif; font-size: 22px; font-weight: 300; color: var(--g3); cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0; }
+.modal-x:hover    { background: var(--g1); color: var(--black); }
+
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ---- Footer ---- */
+.app-footer    { padding: .45rem 2rem; background: var(--white); border-top: 1px solid var(--g2); display: flex; align-items: center; justify-content: flex-end; min-height: 28px; }
+.version-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--g3); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <span class="hw"><span class="hw-journal">Psychological Science</span> <span class="hw-sep">|</span> Research Transparency Statement validator</span>
+  <div class="hdr-right">
+    <button class="btn-help"  onclick="openHelpModal()" title="How this app works">? Help</button>
+    <button class="btn-reset" onclick="loadExample()" title="Load a sample RTS that contains real issues">↺ Load example</button>
+    <button class="btn-reset" onclick="resetAll()" title="Clear the pasted statement and the results">↺ Reset all</button>
+  </div>
+</header>
+
+<div class="app">
+
+  <div class="input-panel">
+    <div class="input-top">
+      <div class="s-title">Paste a Research Transparency Statement</div>
+      <div class="s-sub">Each component is checked against the journal's policy as you paste. Anything that doesn't meet the default policy or use the standard wording is flagged for human review.</div>
+    </div>
+    <div class="input-mid">
+      <textarea id="input" class="input-area" spellcheck="false"
+        placeholder="Paste a Research Transparency Statement here — it validates automatically.&#10;&#10;The validator looks for component labels (Conflicts of interest:, Funding:, Materials:, etc.) regardless of section headings or formatting."></textarea>
+    </div>
+  </div>
+
+  <div class="results-panel">
+    <div class="results-top">
+      <div class="p-eye">Validation Results</div>
+      <div id="summary" class="summary summary-empty">Awaiting input — paste an RTS and click <strong>Validate</strong>, or click <em>Load example</em> in the header to see how it works.</div>
+      <div id="results"></div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="app-footer" aria-label="App version">
+  <span class="version-label">v3.2</span>
+</footer>
+
+<dialog id="help-modal" class="modal" aria-labelledby="modal-title">
+  <div class="modal-inner">
+    <div class="modal-head">
+      <button class="modal-x" onclick="closeHelpModal()" aria-label="Close">×</button>
+      <div class="modal-eye" id="modal-eye">Welcome</div>
+      <h2 class="modal-title" id="modal-title">How the RTS Validator works</h2>
+    </div>
+    <div class="modal-body">
+      <p>This tool checks a <strong>Research Transparency Statement</strong> against the journal's policy and flags anything that needs human review.</p>
+      <p>Paste an RTS into the left panel — it validates automatically. Each section heading and each disclosure component (Conflicts of interest, Funding, Materials, etc.) gets one of three statuses:</p>
+      <div class="status-key">
+        <div class="status-key-row">
+          <span class="status-key-icon s-ok">✓</span>
+          <span class="status-key-text"><strong>OK</strong>Disclosure statement meets default policy requirements and uses standard wording.</span>
+        </div>
+        <div class="status-key-row">
+          <span class="status-key-icon s-review">⚠</span>
+          <span class="status-key-text"><strong>Needs review</strong>Disclosure statement does not meet default policy requirements or does not use standard wording.</span>
+        </div>
+        <div class="status-key-row">
+          <span class="status-key-icon s-missing">✗</span>
+          <span class="status-key-text"><strong>Missing</strong>Disclosure statement is missing.</span>
+        </div>
+      </div>
+      <div class="modal-tip">
+        <strong>Try the example</strong>
+        Click <em>Load example</em> in the header to see the validator in action with a sample RTS that contains a mix of OK, Needs review, and Missing components.
+      </div>
+      <p style="margin-top:1rem;font-size:12.5px;color:var(--g3)">
+        The validation rules are loaded from <code>rts-config.js</code>, which is the single source of truth shared with the RTS Builder.
+      </p>
+    </div>
+    <div class="modal-foot">
+      <span class="modal-feedback">Questions or feedback? Email <a href="mailto:psych.star.team@gmail.com?subject=RTS%20Validator%20feedback">psych.star.team@gmail.com</a></span>
+      <button class="modal-close" onclick="closeHelpModal()">Got it</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+// =============================================================
+// RTS Validator — v3.2
+//
+// Policy-based validation with three statuses:
+//
+//   OK            — disclosure meets default policy AND uses standard wording
+//   Needs review  — disclosure is present but doesn't meet default policy
+//                   or doesn't use standard wording
+//   Missing       — disclosure is absent from the RTS entirely
+//
+// Each component has its own policy function in POLICY[subKey] that
+// inspects the parsed body and returns one of those three statuses.
+// =============================================================
+const { $, safeStorage, esc, isValidUrl, normalizeWhitespace } = RTS;
+
+// =============================================================
+// EXAMPLE STATEMENT
+// Designed to surface a mix of OK / Needs review / Missing so the
+// data editor sees what each status looks like on first run.
+// =============================================================
+const EXAMPLE_RTS = `General Disclosures
+
+Conflicts of interest: All authors declare they have no conflicts of interest. Funding: This research received no funding. Artificial intelligence: No artificial intelligence assisted technologies were used in this research or the creation of this article. Ethics: This research received ethics approval from the University of Sydney Human Research Ethics Committee (ID: 2023/HE001234).
+
+Study One
+
+Preregistration: The aims/hypotheses and methods were preregistered (https://doi.org/10.17605/OSF.IO/AB2CD) prior to data collection. The analyses were not preregistered. There were major and minor deviations from the preregistration (for details see Supplementary Table 1). Materials: All study materials are publicly available (https://doi.org/10.17605/OSF.IO/AB2CD). Data: All primary data are publicly available (doi.org/10.17605/OSF.IO/AB2CD). Analysis scripts: All analysis scripts are publicly available (https://doi.org/10.17605/OSF.IO/AB2CD).
+
+Study Two
+
+Preregistration: No aspects of this study were preregistered. Materials: All study materials are publicly available (https://doi.org/10.17605/OSF.IO/EF3GH). Analysis scripts: All analysis scripts are publicly available (https://doi.org/10.17605/OSF.IO/EF3GH).`;
+
+// =============================================================
+// STATE
+// =============================================================
+let cfgRaw = null;        // parsed YAML, untouched
+let cfg    = null;        // effective config (no RR overlay — Validator is non-RR)
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadConfig(globalThis.RTS_CONFIG_YAML);
+  renderEmpty();
+
+  setTimeout(maybeShowWelcomeModal, 350);
+
+  // Auto-validate as the user types or pastes. Debounced so a burst of
+  // input (or a paste) only triggers one validation pass once things
+  // settle. This removes the need for an explicit "Validate" click.
+  const input = $('input');
+  input.addEventListener('input', () => {
+    clearTimeout(_validateTimer);
+    _validateTimer = setTimeout(() => {
+      if (input.value.trim()) validate();
+      else renderEmpty();
+    }, 300);
+  });
+
+  // Backdrop click closes the help modal.
+  const m = $('help-modal');
+  m.addEventListener('click', (e) => {
+    const r = m.getBoundingClientRect();
+    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    if (!inside) closeHelpModal();
+  });
+  m.addEventListener('close', () => { safeStorage.set(HELP_SHOWN_KEY, '1'); });
+});
+
+let _validateTimer = null;
+
+// =============================================================
+// HELP MODAL
+// =============================================================
+const HELP_SHOWN_KEY = 'rts-validator-help-shown-v2';
+
+function openHelpModal() {
+  const m = $('help-modal');
+  $('modal-eye').textContent   = 'How it works';
+  $('modal-title').textContent = 'How the RTS Validator works';
+  if (!m.open) m.showModal();
+}
+function closeHelpModal() {
+  const m = $('help-modal');
+  if (m.open) m.close();
+  safeStorage.set(HELP_SHOWN_KEY, '1');
+}
+function maybeShowWelcomeModal() {
+  const seen = safeStorage.get(HELP_SHOWN_KEY) === '1';
+  if (seen) return;
+  const m = $('help-modal');
+  $('modal-eye').textContent   = 'Welcome';
+  $('modal-title').textContent = 'How the RTS Validator works';
+  if (!m.open) m.showModal();
+}
+
+// =============================================================
+// CONFIG LOADING
+// =============================================================
+function loadConfig(yaml) {
+  try {
+    cfgRaw = jsyaml.load(yaml);
+    cfg    = JSON.parse(JSON.stringify(cfgRaw));
+    runStartupChecks();
+  } catch (e) {
+    console.error('Failed to load RTS configuration:', e);
+    document.body.insertAdjacentHTML('afterbegin',
+      '<div style="background:#fff0ee;border:1px solid #b04030;color:#b04030;padding:1rem;font-family:sans-serif;font-size:14px">'
+      + 'Failed to load the RTS Validator configuration. Please refresh the page or contact support if the problem persists.<br>'
+      + 'Technical detail: ' + (e.message || e) + '</div>');
+  }
+}
+
+function runStartupChecks() {
+  if (!cfg || !cfg.sections) {
+    console.warn('[startup-check] cfg.sections missing — validator cannot run.');
+    return;
+  }
+  if (!cfg.study_template) {
+    console.warn('[startup-check] No study_template — per-study sections will be ignored.');
+  }
+}
+
+// Clear the pasted statement and the results. Named "resetAll" to
+// match the equivalent control in the RTS Builder.
+function resetAll() {
+  $('input').value = '';
+  renderEmpty();
+}
+
+// =============================================================
+// PARSING — extract components from input text
+// =============================================================
+// Returns array of components:
+//   [{ labelText, subKey, sectionType, studyIndex, body, position }, ...]
+function parseRTS(input) {
+  const knownLabels = [];
+  if (cfg.sections?.general_disclosures?.subsections) {
+    Object.entries(cfg.sections.general_disclosures.subsections).forEach(([subKey, sub]) => {
+      if (sub.statement_label) {
+        knownLabels.push({ display: sub.statement_label, subKey, sectionType: 'general_disclosures' });
+      }
+    });
+  }
+  if (cfg.study_template?.subsections) {
+    Object.entries(cfg.study_template.subsections).forEach(([subKey, sub]) => {
+      if (sub.statement_label) {
+        knownLabels.push({ display: sub.statement_label, subKey, sectionType: 'study' });
+      }
+    });
+  }
+  if (knownLabels.length === 0) return { components: [], studyIndices: [1] };
+
+  // Sort by length desc so longer labels match first ("Analysis scripts" before "Analysis")
+  const sortedLabels = [...knownLabels].sort((a, b) => b.display.length - a.display.length);
+  const escaped = sortedLabels.map(l => l.display.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const labelRegex = new RegExp('(?:^|[\\s\\n])(' + escaped.join('|') + ')\\s*:\\s*', 'gi');
+
+  const labelMatches = [];
+  let m;
+  while ((m = labelRegex.exec(input)) !== null) {
+    const matchedText = m[1];
+    const labelDef = sortedLabels.find(l => l.display.toLowerCase() === matchedText.toLowerCase());
+    if (!labelDef) continue;
+    labelMatches.push({
+      pos:       m.index + m[0].indexOf(matchedText),
+      end:       m.index + m[0].length,
+      labelText: matchedText,
+      labelDef,
+    });
+  }
+
+  // Detect studies by "Study N" / "Study One" headings (positional grouping).
+  const studyHeadingRegex = /(?:^|\n)\s*(?:#+\s*)?Study\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b[^\n]*/gi;
+  const wordToNum = { one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10 };
+  const studyHeadings = [];
+  let h;
+  while ((h = studyHeadingRegex.exec(input)) !== null) {
+    const raw = h[1].toLowerCase();
+    const idx = wordToNum[raw] || parseInt(raw, 10);
+    if (idx) studyHeadings.push({ pos: h.index, index: idx });
+  }
+  function studyIndexAt(pos) {
+    let result = null;
+    for (const sh of studyHeadings) {
+      if (sh.pos <= pos) result = sh.index;
+      else break;
+    }
+    return result;
+  }
+  const usePositional  = studyHeadings.length > 0;
+  const fallbackCounts = {};
+
+  const components = [];
+  for (let i = 0; i < labelMatches.length; i++) {
+    const start = labelMatches[i].end;
+    const stop  = (i + 1 < labelMatches.length) ? labelMatches[i + 1].pos : input.length;
+    const body  = stripTrailingHeadings(input.slice(start, stop));
+
+    let studyIndex = null;
+    if (labelMatches[i].labelDef.sectionType === 'study') {
+      if (usePositional) {
+        studyIndex = studyIndexAt(labelMatches[i].pos) || 1;
+      } else {
+        const subKey = labelMatches[i].labelDef.subKey;
+        fallbackCounts[subKey] = (fallbackCounts[subKey] || 0) + 1;
+        studyIndex = fallbackCounts[subKey];
+      }
+    }
+
+    components.push({
+      labelText:   labelMatches[i].labelText,
+      labelDef:    labelMatches[i].labelDef,
+      subKey:      labelMatches[i].labelDef.subKey,
+      sectionType: labelMatches[i].labelDef.sectionType,
+      studyIndex,
+      body,
+      position:    labelMatches[i].pos,
+    });
+  }
+
+  // Compute the set of study indices we should expect to see results for.
+  // - Always expect at least Study 1.
+  // - Add any explicit headings.
+  // - Add any inferred study indices from fallback counts.
+  const indicesPresent = new Set([1]);
+  studyHeadings.forEach(sh => indicesPresent.add(sh.index));
+  components.filter(c => c.sectionType === 'study').forEach(c => indicesPresent.add(c.studyIndex));
+  const studyIndices = [...indicesPresent].sort((a, b) => a - b);
+
+  return { components, studyIndices };
+}
+
+function stripTrailingHeadings(text) {
+  const lines = text.split(/\n/);
+  const headingRegex = /^(?:#+\s*)?(?:General Disclosures|Study\s+(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten))\s*$/i;
+  while (lines.length > 0) {
+    const last = lines[lines.length - 1].trim();
+    if (last === '' || headingRegex.test(last) || /^#+\s+\S/.test(last)) {
+      lines.pop();
+    } else {
+      break;
+    }
+  }
+  return lines.join('\n').trim();
+}
+
+// =============================================================
+// POLICY VALIDATORS
+// One per component (subKey). Each returns:
+//   { status: 'ok' | 'review', message, expectedWording? }
+// Missing components are synthesized separately by detectMissing().
+// =============================================================
+function ok(message)         { return { status: 'ok', message: message || "Meets policy and uses standard wording." }; }
+function review(message, expectedWording) {
+  return { status: 'review', message, expectedWording };
+}
+
+const NO_CONFLICTS_TEXT = "All authors declare they have no conflicts of interest.";
+const NO_FUNDING_TEXT   = "This research received no funding.";
+const NO_AI_TEXT        = "No artificial intelligence assisted technologies were used in this research or the creation of this article.";
+const NO_PREREG_TEXT    = "No aspects of this study were preregistered.";
+const FUNDERS_NO_ROLE   = "The funders did not have any role in study design, implementation, analysis, reporting or interpretation.";
+
+const POLICY = {
+  // ─── Conflicts of interest ─────────────────────────────────
+  // OK only if the standard "no conflicts" wording is used.
+  // Anything else (any disclosed conflict, however worded) → review.
+  conflicts_of_interest(body) {
+    if (normalizeWhitespace(body) === NO_CONFLICTS_TEXT) return ok();
+    return review(
+      "Conflicts of interest are disclosed (or worded non-standardly). The data editor should review the content.",
+      [NO_CONFLICTS_TEXT, "(or, if conflicts exist, an author-supplied disclosure)"]
+    );
+  },
+
+  // ─── Funding ───────────────────────────────────────────────
+  // OK if either:
+  //   (a) standard "no funding" wording, OR
+  //   (b) a funding statement that ends with the standard "funders had no role"
+  //       sentence (i.e., fund1=yes + fund3=no path).
+  // Otherwise → review (fund3=yes path, funder details missing, etc.).
+  funding(body) {
+    const trimmed = normalizeWhitespace(body);
+    if (trimmed === NO_FUNDING_TEXT) return ok("Funding declared as none.");
+    if (trimmed.endsWith(FUNDERS_NO_ROLE)) return ok("Funders disclosed; statement confirms funders had no role in the study.");
+    return review(
+      "Funding statement does not state that funders had no role in the study (or doesn't use the standard wording).",
+      [
+        NO_FUNDING_TEXT,
+        "[funding details]. " + FUNDERS_NO_ROLE,
+      ]
+    );
+  },
+
+  // ─── Artificial intelligence ───────────────────────────────
+  // OK only if the standard "no AI" wording is used. Any reported AI use → review.
+  artificial_intelligence(body) {
+    if (normalizeWhitespace(body) === NO_AI_TEXT) return ok("No AI tools used.");
+    return review(
+      "AI use is disclosed (or worded non-standardly). The data editor should review the disclosed tools.",
+      [NO_AI_TEXT, "(or, if AI was used, an author-supplied description)"]
+    );
+  },
+
+  // ─── Ethics ────────────────────────────────────────────────
+  // OK only if eth1=yes + eth2=yes + eth3 named. The valid surface forms are:
+  //   "This research received ethics approval from <board>."
+  //   "This research received ethics approval from <board> (ID: <id>)."
+  // Anything else (no approval required, custom statement, etc.) → review.
+  ethics(body) {
+    const trimmed = normalizeWhitespace(body);
+    const m = trimmed.match(/^This research received ethics approval from\s+(\S.+?)(?:\s+\(ID:\s*.+?\))?\.\s*$/i);
+    if (m && m[1].trim().length > 0) return ok("Ethics approval received from a named ethics body.");
+    return review(
+      "Ethics statement does not use the standard 'approval received from …' wording, or doesn't name an ethics body.",
+      [
+        "This research received ethics approval from [ethics board].",
+        "This research received ethics approval from [ethics board] (ID: [application ID]).",
+      ]
+    );
+  },
+
+  // ─── Preregistration ───────────────────────────────────────
+  // OK if:
+  //   (a) standard "no aspects preregistered" wording, OR
+  //   (b) every sentence matches one of the standard preregistration patterns
+  // Otherwise → review.
+  preregistration(body) {
+    if (normalizeWhitespace(body) === NO_PREREG_TEXT) return ok("No preregistration disclosed.");
+    const sentenceResults = checkPrereregistrationSentences(body);
+    const allMatch = sentenceResults.every(r => r.status === 'ok');
+    if (allMatch) return Object.assign(ok("All preregistration sentences match the journal's standard patterns."), { sentenceResults });
+    return Object.assign(
+      review("One or more preregistration sentences don't match the journal's standard patterns.",
+        [NO_PREREG_TEXT, "(or sentences matching the standard preregistration templates — see the Builder)"]
+      ),
+      { sentenceResults }
+    );
+  },
+
+  // ─── Materials ─────────────────────────────────────────────
+  // OK only if "All study materials are publicly available (URL)." with a valid URL.
+  materials(body) {
+    return validatePublicAvailability(body, 'study materials', 'All study materials are publicly available');
+  },
+
+  // ─── Data ──────────────────────────────────────────────────
+  data(body) {
+    return validatePublicAvailability(body, 'primary data', 'All primary data are publicly available');
+  },
+
+  // ─── Analysis scripts ──────────────────────────────────────
+  analysis_scripts(body) {
+    return validatePublicAvailability(body, 'analysis scripts', 'All analysis scripts are publicly available');
+  },
+};
+
+// Shared validator for materials / data / analysis scripts.
+// They all follow the same surface form: "<lead> (URL).". Anything else → review.
+function validatePublicAvailability(body, noun, leadText) {
+  const trimmed = normalizeWhitespace(body);
+  const re = new RegExp('^' + leadText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s+\\(([^)]+)\\)\\.\\s*$', 'i');
+  const m = trimmed.match(re);
+  if (m) {
+    const url = m[1].trim();
+    if (isValidUrl(url)) return ok(`All ${noun} publicly available at a valid URL.`);
+    return review(`${leadText[0].toUpperCase() + leadText.slice(1)}, but the URL inside the parentheses isn't a valid http(s) link.`, [`${leadText} ([direct link]).`]);
+  }
+  return review(`${noun[0].toUpperCase() + noun.slice(1)} are not all publicly available, or the standard wording isn't used.`, [`${leadText} ([direct link]).`]);
+}
+
+// =============================================================
+// PREREGISTRATION SENTENCE-LEVEL CHECK
+// Allow any sentence matching one of the standard preregistration patterns.
+// Used by POLICY.preregistration().
+// =============================================================
+const TIMING = '(?: prior to data collection| after data collection,? but before data access| after data access,? but before data analysis)?';
+const URL    = '(?: \\([^)]+\\))?';
+
+const PREREG_PATTERNS = [
+  /^No aspects of (?:this|the) study were preregistered\.$/i,
+  // Fully preregistered (with optional partly-preregistered tail, optional URL, optional timing)
+  new RegExp('^The .+? (?:were|was) preregistered(?: and the .+? (?:were|was) partly preregistered)?' + URL + TIMING + '\\.$', 'i'),
+  // Partly preregistered only
+  new RegExp('^The .+? (?:were|was) partly preregistered' + URL + TIMING + '\\.$', 'i'),
+  // What was NOT preregistered
+  /^The .+? (?:were|was) not preregistered\.$/i,
+  // No deviations
+  /^There were no deviations from the preregistration\.$/i,
+  // Some deviations (with optional location)
+  /^There were (?:major|minor|major and minor) deviations from the preregistration(?: \(for details see .+?\))?\.$/i,
+];
+
+function checkPrereregistrationSentences(body) {
+  const sentences = splitSentences(body);
+  return sentences.map(sentence => {
+    const matches = PREREG_PATTERNS.some(p => p.test(sentence));
+    return { sentence, status: matches ? 'ok' : 'review' };
+  });
+}
+
+// Sentence splitter that's paren-aware and skips common abbreviations.
+const ABBREV = /\b(?:e\.g|i\.e|cf|etc|vs|Dr|Mr|Mrs|Ms|Prof|St|No|Inc|Ltd|et al|approx|fig|figs|p|pp|vol|chap)\.$/i;
+function splitSentences(text) {
+  const out = [];
+  let buf   = '';
+  let depth = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    buf += ch;
+    if (ch === '(') depth++;
+    else if (ch === ')') depth = Math.max(0, depth - 1);
+    if (ch === '.' && depth === 0) {
+      const next     = text[i + 1] || '';
+      const nextNext = text[i + 2] || '';
+      const followedByGap = next === ' ' || next === '\n' || next === '\t';
+      const startsCapital = /[A-Z]/.test(nextNext);
+      const isEnd         = i === text.length - 1;
+      if (isEnd || (followedByGap && (startsCapital || nextNext === ''))) {
+        if (!ABBREV.test(buf.trim())) {
+          out.push(buf.trim());
+          buf = '';
+          while (i + 1 < text.length && /\s/.test(text[i + 1])) i++;
+        }
+      }
+    }
+  }
+  if (buf.trim()) out.push(buf.trim());
+  return out.filter(Boolean);
+}
+
+// =============================================================
+// MISSING-COMPONENT DETECTION
+// For each section we expect, list any component the input didn't include.
+// =============================================================
+function detectMissing(presentComponents, studyIndices) {
+  // Components we expect under General Disclosures.
+  const generalSubs = Object.keys(cfg.sections?.general_disclosures?.subsections || {});
+  // Components we expect for each study.
+  const studySubs   = Object.keys(cfg.study_template?.subsections || {});
+
+  const missing = [];
+
+  generalSubs.forEach(subKey => {
+    const found = presentComponents.some(c => c.sectionType === 'general_disclosures' && c.subKey === subKey);
+    if (!found) {
+      const sub = cfg.sections.general_disclosures.subsections[subKey];
+      missing.push({
+        labelText:   sub.statement_label || subKey,
+        subKey,
+        sectionType: 'general_disclosures',
+        studyIndex:  null,
+        status:      'missing',
+        message:     `No "${sub.statement_label || subKey}" statement found in the input.`,
+      });
+    }
+  });
+
+  studyIndices.forEach(studyIdx => {
+    studySubs.forEach(subKey => {
+      const found = presentComponents.some(c => c.sectionType === 'study' && c.subKey === subKey && c.studyIndex === studyIdx);
+      if (!found) {
+        const sub = cfg.study_template.subsections[subKey];
+        missing.push({
+          labelText:   sub.statement_label || subKey,
+          subKey,
+          sectionType: 'study',
+          studyIndex:  studyIdx,
+          status:      'missing',
+          message:     `No "${sub.statement_label || subKey}" statement found for Study ${studyIdx}.`,
+        });
+      }
+    });
+  });
+
+  return missing;
+}
+
+// =============================================================
+// SECTION-HEADING CHECK
+// Confirms the RTS carries a "General Disclosures" heading and a
+// "Study N" heading for each study, and that each heading sits
+// *before* the statements it introduces. Emits one result per
+// section:
+//   ok       — heading found, in the right place
+//   review   — heading found, but after that section's statements
+//   missing  — no heading found for that section
+// =============================================================
+function checkHeadings(input, components, studyIndices) {
+  const results = [];
+
+  // ---- "General Disclosures" heading ----
+  // Anchored to the start of a line; tolerates an optional Markdown
+  // "#" prefix and optional trailing punctuation, but the line must
+  // otherwise be just the heading.
+  const gdHeadingRe = /(?:^|\n)[ \t]*(?:#+[ \t]*)?General\s+Disclosures?[ \t]*:?[ \t]*(?:\n|$)/i;
+  const gdMatch     = gdHeadingRe.exec(input);
+  const gdHeadingPos = gdMatch ? gdMatch.index : null;
+
+  const genComponents = components.filter(c => c.sectionType === 'general_disclosures');
+  const firstGenPos   = genComponents.length ? Math.min(...genComponents.map(c => c.position)) : null;
+
+  if (gdHeadingPos === null) {
+    results.push(headingResult('general_disclosures', null, 'missing',
+      'No "General Disclosures" heading found. The general disclosure statements should be preceded by a "General Disclosures" heading.'));
+  } else if (firstGenPos !== null && gdHeadingPos > firstGenPos) {
+    results.push(headingResult('general_disclosures', null, 'review',
+      'The "General Disclosures" heading appears after the general disclosure statements — it should come before them.'));
+  } else {
+    results.push(headingResult('general_disclosures', null, 'ok',
+      '"General Disclosures" heading found in the correct position.'));
+  }
+
+  // ---- "Study N" headings ----
+  // Re-scan for study headings and remember the position of the first
+  // occurrence of each study number.
+  const studyHeadingRe = /(?:^|\n)[ \t]*(?:#+[ \t]*)?Study\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b[^\n]*/gi;
+  const wordToNum = { one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10 };
+  const headingPosByStudy = {};
+  let h;
+  while ((h = studyHeadingRe.exec(input)) !== null) {
+    const idx = wordToNum[h[1].toLowerCase()] || parseInt(h[1], 10);
+    if (idx && headingPosByStudy[idx] === undefined) headingPosByStudy[idx] = h.index;
+  }
+
+  studyIndices.forEach(studyIdx => {
+    const headingPos      = headingPosByStudy[studyIdx];
+    const studyComponents = components.filter(c => c.sectionType === 'study' && c.studyIndex === studyIdx);
+    const firstStudyPos   = studyComponents.length ? Math.min(...studyComponents.map(c => c.position)) : null;
+
+    if (headingPos === undefined) {
+      results.push(headingResult('study', studyIdx, 'missing',
+        `No "Study ${studyIdx}" heading found. Each study's statements should be preceded by a "Study ${studyIdx}" heading.`));
+    } else if (firstStudyPos !== null && headingPos > firstStudyPos) {
+      results.push(headingResult('study', studyIdx, 'review',
+        `The "Study ${studyIdx}" heading appears after that study's statements — it should come before them.`));
+    } else {
+      results.push(headingResult('study', studyIdx, 'ok',
+        `"Study ${studyIdx}" heading found in the correct position.`));
+    }
+  });
+
+  return results;
+}
+
+function headingResult(sectionType, studyIndex, status, message) {
+  return {
+    isHeadingCheck: true,
+    labelText:      'Section heading',
+    sectionType,
+    studyIndex,
+    status,
+    message,
+  };
+}
+
+// =============================================================
+// MAIN
+// =============================================================
+function validate() {
+  const input = $('input').value;
+  if (!input.trim()) {
+    renderEmpty('Please paste an RTS first.');
+    return;
+  }
+  if (!cfg) {
+    renderEmpty('Configuration failed to load. Please refresh the page.');
+    return;
+  }
+
+  const { components, studyIndices } = parseRTS(input);
+
+  if (components.length === 0) {
+    $('summary').className = 'summary';
+    $('summary').innerHTML = '<strong>No recognized components found.</strong><br><span style="font-size:.85rem;color:var(--g4);font-style:italic">The validator looks for known labels (Conflicts of interest:, Funding:, Materials:, etc.). Make sure your input includes them.</span>';
+    $('results').innerHTML = '';
+    return;
+  }
+
+  // Validate each present component against its policy.
+  const presentResults = components.map(c => {
+    const policyFn = POLICY[c.subKey];
+    const result = policyFn ? policyFn(c.body) : review('Unknown component — no validation rules defined.');
+    return { ...c, ...result };
+  });
+
+  // Synthesize Missing entries for absent components.
+  const missingResults = detectMissing(components, studyIndices);
+
+  // Check the section headings ("General Disclosures", "Study N").
+  const headingResults = checkHeadings(input, components, studyIndices);
+
+  // Combine and order: within each section the heading check comes
+  // first, then the components in YAML order. Sections run General
+  // Disclosures → Study 1 → Study 2 → ...
+  const allResults = orderResults(
+    presentResults.concat(missingResults, headingResults),
+    studyIndices
+  );
+
+  renderResults(allResults);
+}
+
+function orderResults(results, studyIndices) {
+  const generalSubs = Object.keys(cfg.sections?.general_disclosures?.subsections || {});
+  const studySubs   = Object.keys(cfg.study_template?.subsections || {});
+
+  // Heading checks sort to -1 so they appear above the components in
+  // their section; components keep their YAML order.
+  const orderKey = (r) => {
+    const subIdx = r.isHeadingCheck ? -1 : null;
+    if (r.sectionType === 'general_disclosures') {
+      return [0, subIdx !== null ? subIdx : generalSubs.indexOf(r.subKey)];
+    }
+    return [1 + studyIndices.indexOf(r.studyIndex), subIdx !== null ? subIdx : studySubs.indexOf(r.subKey)];
+  };
+
+  return results.slice().sort((a, b) => {
+    const ka = orderKey(a), kb = orderKey(b);
+    return ka[0] - kb[0] || ka[1] - kb[1];
+  });
+}
+
+// =============================================================
+// RENDERING
+// =============================================================
+function renderEmpty(msg) {
+  $('summary').className = 'summary summary-empty';
+  $('summary').textContent = msg || 'Awaiting input — paste an RTS and click Validate.';
+  $('results').innerHTML = '';
+}
+
+const STATUS_LABELS = {
+  ok:      'OK',
+  review:  'Needs review',
+  missing: 'Missing',
+};
+const STATUS_ICONS = { ok: '✓', review: '⚠', missing: '✗' };
+
+function renderResults(results) {
+  // ---- Summary ----
+  const counts = { ok: 0, review: 0, missing: 0 };
+  results.forEach(r => { counts[r.status] = (counts[r.status] || 0) + 1; });
+  const total = results.length;
+
+  const sumEl = $('summary');
+  sumEl.className = 'summary';
+
+  const segs = [];
+  ['ok', 'review', 'missing'].forEach(s => {
+    if (counts[s]) segs.push(`<div class="summary-bar-seg s-${s}" style="width:${counts[s] / total * 100}%" title="${counts[s]} ${STATUS_LABELS[s]}"></div>`);
+  });
+
+  const flagged  = counts.review + counts.missing;
+  const headline = flagged === 0
+    ? `<strong style="color:var(--green)">All ${total} check${total !== 1 ? 's' : ''} OK.</strong>`
+    : `<strong>${flagged} of ${total} check${total !== 1 ? 's' : ''} flagged.</strong>`;
+
+  const pct = (n) => Math.round(n / total * 100);
+  const statRow = (s) => counts[s]
+    ? `<div class="ss-item"><span class="ss-icon s-${s}">${STATUS_ICONS[s]}</span><span class="ss-num">${counts[s]}</span><span class="ss-label">${STATUS_LABELS[s].toLowerCase()}</span><span class="ss-pct">(${pct(counts[s])}%)</span></div>`
+    : '';
+
+  sumEl.innerHTML = `
+    <div>${headline}</div>
+    <div class="summary-bar">${segs.join('')}</div>
+    <div class="summary-stats">
+      ${statRow('ok')}
+      ${statRow('review')}
+      ${statRow('missing')}
+    </div>
+  `;
+
+  // ---- Group by section ----
+  const groups = [];
+  let currentGenGroup = null;
+  const studyGroups = {};
+
+  results.forEach(r => {
+    if (r.sectionType === 'general_disclosures') {
+      if (!currentGenGroup) {
+        currentGenGroup = { heading: 'General Disclosures', items: [] };
+        groups.push(currentGenGroup);
+      }
+      currentGenGroup.items.push(r);
+    } else if (r.sectionType === 'study') {
+      const key = 'study_' + r.studyIndex;
+      if (!studyGroups[key]) {
+        studyGroups[key] = { heading: 'Study ' + r.studyIndex, items: [] };
+        groups.push(studyGroups[key]);
+      }
+      studyGroups[key].items.push(r);
+    }
+  });
+
+  const html = groups.map(g => {
+    const inner = g.items.map(renderComponentResult).join('');
+    return `<div class="r-group"><div class="r-group-h">${esc(g.heading)}</div>${inner}</div>`;
+  }).join('');
+
+  $('results').innerHTML = html;
+}
+
+function renderComponentResult(r) {
+  // Body display
+  let bodyHtml = '';
+  if (r.status === 'ok' && r.body) {
+    bodyHtml = `<div class="r-body r-${r.status}"><span class="body-text">${esc(r.body)}</span></div>`;
+  } else if (r.status === 'review' && r.body) {
+    bodyHtml = `<div class="r-body r-${r.status}"><span class="body-text">${esc(r.body)}</span></div>`;
+  }
+  // For missing → no body to show
+
+  // Sentence-level details for preregistration
+  let sentenceHtml = '';
+  if (r.sentenceResults && r.sentenceResults.length > 0) {
+    const items = r.sentenceResults.map(s => `
+      <div class="r-sentence r-${s.status}">
+        <span class="r-sentence-icon r-${s.status}">${STATUS_ICONS[s.status]}</span>
+        <span>${esc(s.sentence)}</span>
+      </div>`).join('');
+    sentenceHtml = `<div class="r-sentences">${items}</div>`;
+    bodyHtml = '';   // suppress single-line body — sentence list is more useful
+  }
+
+  // Expected-wording panel for review/missing
+  let expectedHtml = '';
+  if (r.expectedWording && r.expectedWording.length > 0) {
+    const items = r.expectedWording.map(w => `<code>${esc(w)}</code>`).join('');
+    expectedHtml = `<div class="r-expected"><div class="r-expected-h">Standard wording for OK</div>${items}</div>`;
+  }
+
+  const labelMeta = r.studyIndex
+    ? `Study ${r.studyIndex} — ${r.labelText}`
+    : r.labelText;
+
+  return `
+    <div class="r-comp r-${r.status}">
+      <div class="r-head">
+        <span class="r-icon r-${r.status}">${STATUS_ICONS[r.status]}</span>
+        <span class="r-status r-${r.status}">${STATUS_LABELS[r.status]}</span>
+        <span class="r-label">${esc(labelMeta)}</span>
+      </div>
+      ${bodyHtml}
+      <div class="r-msg">${esc(r.message || '')}</div>
+      ${sentenceHtml}
+      ${expectedHtml}
+    </div>`;
+}
+
+// =============================================================
+// EXAMPLE
+// =============================================================
+function loadExample() {
+  $('input').value = EXAMPLE_RTS;
+  validate();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research Transparency Statement tools · Psychological Science</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!--
+  Privacy-friendly analytics via GoatCounter — same site code ("psci-star")
+  as the two apps, so the landing page shows up as "/" alongside "/builder/"
+  and "/validator/" in one dashboard. See builder/index.html for setup notes.
+-->
+<script data-goatcounter="https://psci-star.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue: #3a5a80;
+  --blue-hover: #2c5280;
+  --blue-bg: #eef2f8;
+  --black: #111;
+  --g0: #fafaf8;
+  --g2: #e6e6e0;
+  --g3: #7a7870;
+  --g4: #5e5d57;
+  --white: #fff;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--g0);
+  color: var(--black);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -.005em;
+}
+
+.header {
+  height: 54px;
+  background: var(--white);
+  border-bottom: 1px solid var(--g2);
+  display: flex;
+  align-items: center;
+  padding: 0 2rem;
+}
+.hw         { font-size: 15.5px; font-weight: 500; letter-spacing: -.01em; }
+.hw-journal { color: var(--blue); font-weight: 600; }
+.hw-sep     { color: var(--g3); font-weight: 400; margin: 0 .15rem; }
+
+.wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+}
+.intro {
+  max-width: 640px;
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+.intro h1 {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  margin-bottom: .75rem;
+}
+.intro p {
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--g4);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 280px));
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 600px;
+}
+@media (max-width: 620px) {
+  .cards { grid-template-columns: 1fr; max-width: 340px; }
+}
+.card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--white);
+  border: 1px solid var(--g2);
+  border-radius: 10px;
+  padding: 1.5rem;
+  transition: border-color .12s, box-shadow .12s, transform .12s;
+  box-shadow: 0 1px 2px rgba(60, 80, 110, .04), 0 4px 16px rgba(60, 80, 110, .05);
+}
+.card:hover {
+  border-color: var(--blue);
+  box-shadow: 0 2px 4px rgba(60, 80, 110, .08), 0 8px 24px rgba(60, 80, 110, .10);
+  transform: translateY(-2px);
+}
+.card-icon {
+  width: 34px;
+  height: 34px;
+  color: var(--blue);
+  margin-bottom: .85rem;
+}
+.card-title {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  margin-bottom: .35rem;
+}
+.card-desc {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--g4);
+}
+.card-cta {
+  margin-top: .9rem;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--blue);
+}
+
+.footer {
+  padding: 1rem 2rem;
+  background: var(--white);
+  border-top: 1px solid var(--g2);
+  text-align: center;
+}
+.footer span { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--g3); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <span class="hw"><span class="hw-journal">Psychological Science</span> <span class="hw-sep">|</span> Research Transparency Statement tools</span>
+</header>
+
+<div class="wrap">
+  <div class="intro">
+    <h1>Research Transparency Statement tools</h1>
+    <p>Two companion tools for preparing and checking the Research Transparency Statement (RTS) required in <em>Psychological Science</em> manuscripts.</p>
+  </div>
+
+  <div class="cards">
+    <a class="card" href="./builder/">
+      <svg class="card-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M11 2.5L13.5 5 5 13.5H2.5V11L11 2.5z"/>
+        <path d="M9.5 4l2.5 2.5"/>
+      </svg>
+      <div class="card-title">RTS Builder</div>
+      <div class="card-desc">For authors. Answer questions about your research and the tool composes a policy-aligned Research Transparency Statement to paste into your manuscript.</div>
+      <div class="card-cta">Open the Builder →</div>
+    </a>
+
+    <a class="card" href="./validator/">
+      <svg class="card-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2 8.5l3.5 3.5L14 4"/>
+      </svg>
+      <div class="card-title">RTS Validator</div>
+      <div class="card-desc">For the editorial team. Paste a submitted RTS and each section is checked against the journal's policy and standard wording.</div>
+      <div class="card-cta">Open the Validator →</div>
+    </a>
+  </div>
+</div>
+
+<footer class="footer">
+  <span>Psychological Science · Research Transparency Statement tools</span>
+</footer>
+
+</body>
+</html>

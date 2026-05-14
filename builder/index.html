@@ -1,0 +1,2683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RTS Builder v3 · Psychological Science</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+<script src="../rts-config.js"></script>
+<script src="../rts-utils.js"></script>
+<!--
+  Privacy-friendly analytics via GoatCounter (https://www.goatcounter.com/).
+  No cookies, no PII, IPs are hashed and dropped after 8 hours — fully
+  GDPR-compliant and free for non-commercial use.
+
+  This is wired to the GoatCounter site code "psci-star". For data to
+  actually be collected, that code must be registered once:
+    1. Sign up at https://www.goatcounter.com/signup
+    2. Set the site code to "psci-star" so the endpoint below resolves
+       to https://psci-star.goatcounter.com/. If that code is already
+       taken, choose another and update the data-goatcounter URL in
+       BOTH builder/index.html and validator/index.html to match.
+
+  GoatCounter records the page path automatically, so the Builder
+  (/builder/) and the Validator (/validator/) show up as separate
+  entries in the same dashboard.
+-->
+<script data-goatcounter="https://psci-star.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Three-tier blue: primary / hover / tinted-bg. */
+  --blue: #3a5a80;
+  --blue-hover: #2c5280;
+  --blue-bg: #eef2f8;
+  --black: #111;
+  --g0: #fafaf8;
+  --g1: #f4f3ef;
+  --g2: #e6e6e0;
+  /* g3 darkened from #9a988e to meet WCAG AA on the g0 background */
+  --g3: #7a7870;
+  --g4: #5e5d57;
+  --white: #fff;
+  --green: #4a7e54;
+  --red: #b04030;
+  --amber: #a87212;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--g0);
+  color: var(--black);
+  min-height: 100vh;
+  height: 100vh;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -.005em;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Header ---- */
+.header {
+  height: 54px;
+  background: var(--white);
+  border-bottom: 1px solid var(--g2);
+  display: flex;
+  align-items: center;
+  padding: 0 2rem;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.hw           { font-family: 'Inter', sans-serif; font-size: 15.5px; font-weight: 500; letter-spacing: -.01em; color: var(--black); }
+.hw-journal   { color: var(--blue); font-weight: 600; }
+.hw-sep       { color: var(--g3); font-weight: 400; margin: 0 .15rem; }
+.icon-glyph   { flex-shrink: 0; display: inline-block; vertical-align: -2px; margin-right: .35rem; }
+.btn-reset .icon-glyph,
+.btn-help  .icon-glyph,
+.reset-stmt-btn .icon-glyph { vertical-align: baseline; }
+.btn-reset, .btn-help {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--g4);
+  background: var(--white);
+  border: 1px solid var(--g2);
+  padding: .4rem .85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all .12s;
+}
+.btn-help:hover  { border-color: var(--blue); color: var(--blue); }
+/* Reset is destructive — hint with a red border on hover. */
+.btn-reset:hover { border-color: var(--red); color: var(--red); }
+
+.hdr-right { display: flex; align-items: center; gap: .85rem; }
+
+/* Save / restore indicator */
+.save-ind {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--green);
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  opacity: 0;
+  transition: opacity .25s;
+}
+.save-ind.show       { opacity: 1; }
+.save-ind.show.fade  { opacity: .55; }
+.save-ind::before    { content: ''; width: 6px; height: 6px; background: var(--green); border-radius: 50%; }
+.save-ind.warn         { color: var(--amber); }
+.save-ind.warn::before { background: var(--amber); }
+
+/* ---- Section stepper (top-of-page chip nav) ---- */
+.stepper {
+  display: flex;
+  align-items: center;
+  background: var(--white);
+  padding: .65rem 1.5rem .85rem;
+  gap: .45rem;
+  overflow-x: auto;
+  min-height: 56px;
+  /* Fade-out on right edge hints at horizontal scroll on narrow screens. */
+  mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .55rem .95rem;
+  background: var(--blue-bg);
+  border: 1px solid var(--blue-bg);
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--blue-hover);
+  transition: all .12s;
+  white-space: nowrap;
+  position: relative;
+  letter-spacing: -.005em;
+}
+.step:focus { outline: none; }
+.step:focus-visible { box-shadow: 0 0 0 3px var(--blue-bg); }
+.step:hover:not(.is-active) { background: var(--g1); border-color: var(--g3); color: var(--black); }
+.step.is-active             { background: var(--blue-hover); border-color: var(--blue-hover); color: var(--white); font-weight: 600; box-shadow: none; }
+.step:not(.is-active):hover { background: var(--blue-bg); border-color: var(--blue); }
+
+/* Completed section chip (green when not active) */
+.step.is-complete:not(.is-active) { background: #f0f7f2; border-color: #7ab892; color: #3a6e47; }
+.step.is-complete.is-active        { background: #f0f7f2; border-color: #7ab892; color: #3a6e47; font-weight: 600; }
+
+/* Progress arrow above the chip strip */
+.arrow-row { position: relative; background: transparent; height: 34px; border: none; overflow: visible; pointer-events: none; }
+.arrow-indicator {
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  transform: translateX(-50%);
+  transition: left .4s cubic-bezier(.34, 1.56, .64, 1);
+  pointer-events: none;
+}
+.arrow-label   { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; color: var(--blue); line-height: 1; letter-spacing: .02em; white-space: nowrap; background: var(--white); padding: 8px 3px 0; }
+.arrow-chevron { font-size: 12px; color: var(--blue); line-height: 1; animation: chevronPulse 1.6s ease-in-out infinite; }
+@keyframes chevronPulse { 0%, 100% { transform: translateY(0); opacity: 1; } 50% { transform: translateY(3px); opacity: .5; } }
+.arrow-row.all-done .arrow-indicator { display: none; }
+
+.step-sep { width: 1px; height: 22px; background: var(--g2); margin: 0 .25rem; flex-shrink: 0; }
+
+/* + Add study chip */
+.step-add {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .55rem .95rem;
+  background: var(--blue-bg);
+  border: 1px dashed #3a5a80;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--blue-hover);
+  transition: all .12s;
+  white-space: nowrap;
+  letter-spacing: -.005em;
+}
+.step-add:hover { background: var(--blue-bg); border-style: solid; }
+.step-add-plus  { font-size: 15px; font-weight: 600; line-height: 1; }
+
+.step-remove {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--g3);
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  margin-left: .15rem;
+  flex-shrink: 0;
+  transition: all .12s;
+}
+.step-remove:hover { background: var(--red); color: var(--white); }
+
+.nav-panel-wrap            { padding: 1.25rem 1.25rem 0; background: var(--white); }
+.nav-panel                 { background: var(--white); border: 1px solid var(--g2); border-radius: 8px; overflow: hidden; }
+.nav-panel .panel-header   { position: relative; top: auto; }
+.nav-panel .arrow-row      { padding-top: .4rem; }
+
+/* ---- App layout ---- */
+.app {
+  display: grid;
+  grid-template-columns: 1fr 720px;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  background: var(--white);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+@media (max-width: 1100px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    gap: 1rem;
+    padding: 1rem;
+    height: auto;
+    flex: initial;
+    background: var(--white);
+    overflow: visible;
+  }
+  .q-panel { min-height: 65vh; max-height: none; }
+  .p-panel { min-height: 55vh; max-height: none; }
+  .q-panel-body, .p-panel-body { overflow-y: visible; }
+}
+
+/* ---- Question panel ---- */
+.q-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border: 1px solid var(--g2);
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 0;
+  box-shadow: 0 1px 2px rgba(60, 80, 110, .04), 0 4px 16px rgba(60, 80, 110, .05);
+}
+.q-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 2.5rem 2rem;
+  min-height: 0;
+  position: relative;
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+}
+.q-gap { height: 1.5rem; flex-shrink: 0; background: var(--white); position: sticky; top: 0; z-index: 6; margin: 0 -2.5rem; }
+
+/* Per-pane label bar with semantic icon */
+.panel-header {
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  padding: .85rem 2rem;
+  background: var(--white);
+  border-bottom: 0.5px solid var(--g2);
+  color: var(--blue-hover);
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.panel-icon     { width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.panel-icon svg { width: 14px; height: 14px; }
+
+/* Question arrow — indicates the first incomplete question */
+.q-arrow {
+  position: absolute;
+  left: .5rem;
+  width: 18px;
+  height: 18px;
+  color: var(--blue);
+  transform: translateY(-50%);
+  transition: top .45s cubic-bezier(.34, 1.56, .64, 1), opacity .25s;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.q-arrow svg              { width: 18px; height: 18px; }
+.q-arrow.is-positioned    { opacity: 1; }
+
+.q-block { margin-bottom: 1px; border-left: 2px solid transparent; transition: border-color .15s; background: transparent; }
+.q-block.is-hidden        { display: none; }
+.q-block.is-active        { border-left-color: var(--blue); }
+.q-block.is-done          { border-left-color: transparent; }
+.q-inner                  { padding: 1.4rem 0 1.4rem 1.25rem; border-bottom: 1px solid var(--g2); }
+.q-label                  { display: flex; align-items: flex-start; gap: .75rem; margin-bottom: .7rem; }
+.q-num                    { flex-shrink: 0; width: 20px; height: 20px; background: var(--blue); color: var(--white); font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; display: flex; align-items: center; justify-content: center; margin-top: 1px; border-radius: 3px; }
+.q-text                   { font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: var(--black); line-height: 1.45; }
+.q-note                   { font-family: 'Inter', sans-serif; font-size: 14px; color: var(--g3); margin-bottom: .7rem; padding-left: 1.75rem; line-height: 1.5; }
+
+.guidance {
+  padding: .75rem .9rem;
+  margin: 0 0 .75rem 1.75rem;
+  background: var(--blue-bg);
+  border-radius: 4px;
+  border-left: 2px solid var(--blue);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--g4);
+}
+.guidance::before { content: 'Guidance'; display: block; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; color: var(--blue); margin-bottom: .3rem; }
+.guidance a       { color: var(--blue); text-decoration: underline; font-weight: 500; text-underline-offset: 2px; }
+.guidance a:hover { color: var(--black); }
+.guidance ul      { margin: .25rem 0 .25rem 1.1rem; }
+.guidance ul li   { margin-bottom: .25rem; }
+
+.subsection-heading {
+  font-family: 'Inter', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--black);
+  letter-spacing: -.01em;
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  margin: 2.25rem 0 1rem 0;
+}
+.subsection-heading:first-child { margin-top: 0; }
+.subsection-title              { flex-shrink: 0; }
+.subsection-heading::after     { content: ''; flex: 1; height: 1px; background: var(--g2); order: 99; }
+.guidance-btn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--blue);
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color .12s, background .12s;
+}
+.guidance-btn:hover { color: var(--blue-hover); background: var(--blue-bg); }
+.guidance-btn svg   { display: block; }
+
+/* Copy-from-previous-study bar */
+.copy-from-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: .85rem 1rem;
+  margin-bottom: 1.5rem;
+  background: var(--blue-bg);
+  border-left: 3px solid var(--blue);
+  border-radius: 0 4px 4px 0;
+}
+.copy-from-text { font-family: 'Inter', sans-serif; font-size: 13.5px; color: var(--g4); line-height: 1.5; flex: 1; min-width: 0; }
+.copy-from-btn  { font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 500; padding: .55rem 1rem; background: var(--white); color: var(--blue); border: 1px solid var(--blue); cursor: pointer; border-radius: 4px; transition: all .12s; white-space: nowrap; flex-shrink: 0; letter-spacing: -.005em; }
+.copy-from-btn:hover { background: var(--blue); color: var(--white); }
+
+/* Radio */
+.radio-group { display: flex; flex-direction: column; gap: 0; padding-left: 1.75rem; }
+.radio-opt   { display: flex; align-items: center; gap: .65rem; padding: .55rem .85rem; border: 1px solid var(--g2); border-top: none; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--g4); transition: all .1s; user-select: none; background: var(--white); line-height: 1.4; }
+.radio-opt:first-child { border-top: 1px solid var(--g2); border-radius: 4px 4px 0 0; }
+.radio-opt:last-child  { border-radius: 0 0 4px 4px; }
+.radio-opt:only-child  { border-radius: 4px; }
+.radio-opt:hover       { background: #faf9f5; color: var(--black); }
+.radio-opt.chosen      { background: var(--blue); border-color: var(--blue); color: var(--white); font-weight: 500; }
+.radio-opt input[type=radio]        { width: 13px; height: 13px; accent-color: var(--blue); flex-shrink: 0; align-self: center; }
+.radio-opt.chosen input[type=radio] { accent-color: var(--white); }
+
+/* URL */
+.url-wrap     { padding-left: 1.75rem; }
+.url-row      { display: flex; }
+.url-input    { flex: 1; padding: .55rem .85rem; border: 1px solid var(--g2); border-right: none; font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: var(--black); background: var(--white); outline: none; border-radius: 4px 0 0 4px; }
+.url-input:focus { border-color: var(--blue); }
+.url-open-btn { padding: .55rem .9rem; background: var(--white); color: var(--g4); border: 1px solid var(--g2); font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all .1s; text-decoration: none; display: inline-flex; align-items: center; gap: .25rem; border-radius: 0 4px 4px 0; }
+.url-open-btn:hover { background: var(--blue); color: var(--white); border-color: var(--blue); }
+.url-open-btn[aria-disabled=true]       { cursor: not-allowed; color: var(--g3); }
+.url-open-btn[aria-disabled=true]:hover { background: var(--white); color: var(--g3); border-color: var(--g2); }
+.url-status   { font-size: 12px; margin-top: .4rem; font-family: 'Inter', sans-serif; min-height: 1.1em; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.url-status.ok       { color: var(--green); }
+.url-status.err      { color: var(--red); }
+.url-status.checking { color: var(--g3); }
+.url-status.warn     { color: var(--amber); }
+.url-status a        { color: inherit; text-decoration: underline; }
+
+/* Single-line text */
+.text-wrap   { padding-left: 1.75rem; }
+.text-input  { width: 100%; padding: .55rem .85rem; border: 1px solid var(--g2); font-family: 'Inter', sans-serif; font-size: 15px; color: var(--black); background: var(--white); outline: none; transition: border-color .1s; border-radius: 4px; }
+.text-input:focus { border-color: var(--blue); }
+
+/* Textarea */
+.ta-wrap     { padding-left: 1.75rem; }
+.ta-input    { width: 100%; min-height: 90px; padding: .65rem .85rem; border: 1px solid var(--g2); font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.55; color: var(--black); background: var(--white); outline: none; resize: vertical; transition: border-color .1s; border-radius: 4px; }
+.ta-input:focus { border-color: var(--blue); }
+.ta-count    { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--g3); margin-top: .3rem; text-align: right; }
+
+/* Checkboxes */
+.cb-group    { display: flex; flex-direction: column; gap: 0; padding-left: 1.75rem; }
+.cb-item     { display: flex; flex-direction: column; }
+.cb-opt      { display: flex; align-items: center; gap: .65rem; padding: .55rem .85rem; border: 1px solid var(--g2); border-top: none; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--g4); transition: all .1s; user-select: none; background: var(--white); }
+.cb-item:first-child .cb-opt { border-top: 1px solid var(--g2); border-radius: 4px 4px 0 0; }
+.cb-item:last-child  .cb-opt { border-radius: 0 0 4px 4px; }
+.cb-item:only-child  .cb-opt { border-radius: 4px; }
+.cb-opt:hover                { background: #faf9f5; color: var(--black); }
+.cb-opt.chosen               { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); font-weight: 500; }
+.cb-opt input[type=checkbox] { width: 13px; height: 13px; accent-color: var(--blue); flex-shrink: 0; }
+.loc-input   { display: none; padding: .45rem .8rem; border: 1px solid var(--blue); border-top: none; font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; color: var(--black); background: var(--blue-bg); outline: none; width: 100%; border-radius: 0 0 4px 4px; }
+.loc-input.show  { display: block; }
+.loc-input:focus { border-color: var(--black); }
+
+/* ---- Preview panel ---- */
+.p-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border: 1px solid var(--g2);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: background .2s;
+  min-height: 0;
+  box-shadow: 0 1px 2px rgba(60, 80, 110, .04), 0 4px 16px rgba(60, 80, 110, .05);
+}
+.p-panel-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
+.p-gap        { height: 1.5rem; flex-shrink: 0; background: var(--white); position: sticky; top: 0; }
+.p-panel.flash { animation: panelFlash 1.4s ease-out; }
+@keyframes panelFlash {
+  0%   { background: var(--blue-bg); box-shadow: inset 0 0 0 3px var(--blue); }
+  35%  { background: var(--blue-bg); box-shadow: inset 0 0 0 2px rgba(58, 90, 128, .55); }
+  100% { background: var(--white);   box-shadow: inset 0 0 0 0 transparent; }
+}
+.p-top   { padding: 0 1.5rem 1rem; flex: 1; display: flex; flex-direction: column; }
+
+.stmt-box       { background: var(--white); border: 1px solid var(--g2); border-radius: 4px; overflow: visible; position: relative; }
+.stmt-bar       { height: 3px; background: var(--blue); border-top-left-radius: 4px; border-top-right-radius: 4px; }
+.stmt-head      { padding: .85rem 1.15rem; border-bottom: 1px solid var(--g2); display: flex; align-items: center; justify-content: space-between; gap: .85rem; background: var(--white); min-height: 54px; flex-wrap: wrap; }
+.stmt-head-title { font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 600; color: var(--blue-hover); letter-spacing: -.01em; flex: 1; min-width: 0; }
+.stmt-head-controls { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; justify-content: flex-end; }
+.reset-stmt-btn { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; color: var(--g3); background: var(--white); border: 1px solid var(--g2); padding: .25rem .65rem; cursor: pointer; transition: all .1s; display: none; border-radius: 3px; }
+.reset-stmt-btn.show { display: inline-block; }
+.reset-stmt-btn:hover { border-color: var(--blue); color: var(--blue); }
+.stmt-body      { padding: 1.4rem 1.15rem; font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.65; color: var(--black); min-height: 120px; word-wrap: break-word; }
+.stmt-lbl       { font-weight: 700; color: var(--blue); }
+.stmt-section   { margin-bottom: 1.6rem; }
+.stmt-section:last-child { margin-bottom: 0; }
+.stmt-section-h { font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 600; color: var(--black); padding-bottom: .5rem; margin-bottom: .7rem; border-bottom: 1px solid var(--g2); letter-spacing: -.01em; }
+
+/* Per-component (editable) blocks */
+.component {
+  position: relative;
+  /* Right padding is intentionally generous (2.2rem) so the absolutely
+   * positioned pencil icon (.component::after) and the revert button
+   * (.creset, shown when there's a manual edit) can never overlap with
+   * the body text — both sit inside this reserved right-margin zone. */
+  padding: .6rem 2.2rem .6rem .9rem;
+  margin-bottom: .3rem;
+  background: rgba(58, 90, 128, .025);
+  border-left: 2px solid transparent;
+  border-radius: 0 4px 4px 0;
+  transition: background .12s, border-color .12s;
+  cursor: text;
+}
+.component:last-child       { margin-bottom: 0; }
+.component:hover            { background: rgba(58, 90, 128, .07); }
+.component:focus-within     { background: rgba(58, 90, 128, .04); }
+.component.has-edit         { background: #fff8eb; border-left-color: var(--amber); }
+.component.has-placeholder  { background: #fff4e6; border-left-color: var(--amber); }
+.component.just-changed     { animation: flashChanged 1.4s ease-out; }
+@keyframes flashChanged {
+  0%   { background: rgba(58, 90, 128, .18); }
+  60%  { background: rgba(58, 90, 128, .10); }
+  100% { background: rgba(58, 90, 128, .025); }
+}
+.component.has-edit.just-changed { animation: flashChangedAmber 1.4s ease-out; }
+@keyframes flashChangedAmber {
+  0%   { background: rgba(168, 114, 18, .20); }
+  60%  { background: rgba(168, 114, 18, .12); }
+  100% { background: #fff8eb; }
+}
+.component::after {
+  content: '';
+  position: absolute;
+  top: .55rem;
+  right: .7rem;
+  width: 14px;
+  height: 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%237a8a99' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 2.5L13.5 5 5 13.5H2.5V11L11 2.5z'/%3E%3Cpath d='M9.5 4l2.5 2.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 14px 14px;
+  opacity: .6;
+  transition: opacity .15s;
+  pointer-events: none;
+}
+.component:hover::after        { opacity: 1; }
+.component:focus-within::after { opacity: 0; }
+.component.has-edit::after     { content: none; }
+
+.cbody       { outline: none; cursor: text; }
+.cbody:focus { background: #fff; box-shadow: 0 0 0 2px rgba(58, 90, 128, .15); border-radius: 2px; padding: 0 2px; margin: 0 -2px; }
+.component.has-edit .cbody:focus { box-shadow: 0 0 0 2px rgba(168, 114, 18, .25); }
+
+.creset {
+  position: absolute;
+  top: .4rem;
+  right: .4rem;
+  width: 22px;
+  height: 22px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  background: var(--white);
+  border: 1px solid var(--g2);
+  border-radius: 3px;
+  color: var(--g4);
+  cursor: pointer;
+  transition: all .1s;
+  padding: 0;
+  user-select: none;
+}
+.component.has-edit .creset       { display: flex; color: var(--amber); border-color: var(--amber); }
+.creset:hover                     { background: var(--blue); color: var(--white); border-color: var(--blue); }
+.component.has-edit .creset:hover { background: var(--amber); color: var(--white); border-color: var(--amber); }
+
+.ph              { color: var(--g3); font-family: 'Inter', sans-serif; font-size: 14px; }
+.sect-ph         { color: var(--g3); font-family: 'Inter', sans-serif; font-size: 13.5px; font-style: italic; margin: .1rem 0 .6rem; line-height: 1.5; }
+.ph-info         { color: var(--g3); }
+
+.copy-btn-inline {
+  margin-left: auto;
+  padding: .5rem 1rem;
+  background: var(--blue-hover);
+  color: var(--white);
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+  border-radius: 20px;
+  letter-spacing: -.005em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.copy-btn-inline:hover         { background: var(--blue-hover); }
+.copy-btn-inline.copied        { background: var(--green); animation: none; }
+/* Glow when general disclosures AND at least one study are complete */
+.is-copy-ready .copy-btn-inline       { font-weight: 600; animation: ctaReady 2.6s ease-in-out infinite; }
+.is-copy-ready .copy-btn-inline.copied { animation: none; }
+@keyframes ctaReady {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(58, 90, 128, .45); }
+  50%      { box-shadow: 0 0 0 7px rgba(58, 90, 128, 0); }
+}
+
+@keyframes slideIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }
+.q-block:not(.is-hidden) { animation: slideIn .18s ease both; }
+
+/* ---- Modal (native <dialog>) ---- */
+.modal {
+  border: none;
+  padding: 0;
+  background: var(--white);
+  border-radius: 6px;
+  max-width: 580px;
+  width: calc(100% - 3rem);
+  max-height: 85vh;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .18);
+  color: var(--black);
+  overflow: hidden;
+}
+.modal::backdrop  { background: rgba(20, 18, 15, .45); backdrop-filter: blur(2px); }
+.modal[open]      { animation: slideUp .25s ease; display: flex; flex-direction: column; }
+.modal[open]::backdrop { animation: fadeIn .2s ease; }
+.modal-inner     { display: flex; flex-direction: column; max-height: 85vh; }
+.modal-head      { padding: 1.6rem 1.75rem 1rem; border-bottom: 1px solid var(--g2); position: relative; flex-shrink: 0; }
+.modal-eye       { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; color: var(--blue); margin-bottom: .35rem; }
+.modal-title     { font-family: 'Inter', sans-serif; font-size: 22px; font-weight: 500; color: var(--black); letter-spacing: -.018em; line-height: 1.2; }
+.modal-body      { padding: 1.4rem 1.75rem; overflow-y: auto; flex: 1; }
+.modal-body p    { font-family: 'Inter', sans-serif; font-size: 15.5px; line-height: 1.6; color: var(--g4); margin-bottom: .85rem; }
+.modal-body ul   { margin: .1rem 0 .85rem 1.15rem; padding: 0; display: flex; flex-direction: column; gap: .55rem; }
+.modal-body ul li         { font-family: 'Inter', sans-serif; font-size: 15px; line-height: 1.55; color: var(--g4); }
+.modal-body ul li strong  { color: var(--black); }
+.modal-body a    { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; font-weight: 500; }
+.modal-body a:hover  { color: var(--blue-hover); }
+.modal-body p:last-child { margin-bottom: 0; }
+.modal-body p strong     { color: var(--black); font-weight: 500; }
+.modal-steps     { list-style: none; counter-reset: s; margin: .5rem 0 1rem; padding: 0; }
+.modal-steps li  { counter-increment: s; font-family: 'Inter', sans-serif; font-size: 15.5px; line-height: 1.5; color: var(--g4); padding: .65rem 0 .65rem 2.4rem; position: relative; border-bottom: 1px solid var(--g2); }
+.modal-steps li:last-child { border-bottom: none; }
+.modal-steps li::before    { content: counter(s); position: absolute; left: 0; top: .7rem; width: 1.55rem; height: 1.55rem; background: var(--blue); color: var(--white); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; font-family: 'IBM Plex Mono', monospace; }
+.modal-steps li strong     { color: var(--black); font-weight: 500; display: block; margin-bottom: .1rem; }
+.modal-tip       { background: var(--blue-bg); border-left: 2px solid var(--blue); padding: .75rem .95rem; border-radius: 0 4px 4px 0; font-family: 'Inter', sans-serif; font-size: 13.5px; line-height: 1.55; color: var(--g4); margin: .6rem 0; }
+.modal-tip strong { color: var(--blue); font-weight: 500; display: block; margin-bottom: .15rem; }
+.modal-foot      { padding: 1rem 1.75rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-top: 1px solid var(--g2); flex-shrink: 0; background: var(--g0); }
+.modal-feedback  { font-family: 'Inter', sans-serif; font-size: 13.5px; color: var(--g4); line-height: 1.4; }
+.modal-feedback a       { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; font-weight: 500; }
+.modal-feedback a:hover { color: var(--blue-hover); }
+.modal-close     { font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 500; padding: .6rem 1.3rem; background: var(--blue); color: var(--white); border: none; cursor: pointer; border-radius: 4px; letter-spacing: -.005em; transition: background .12s; flex-shrink: 0; }
+.modal-close:hover { background: var(--blue-hover); }
+.modal-x         { position: absolute; top: 1rem; right: 1rem; width: 30px; height: 30px; background: none; border: none; font-family: 'Inter', sans-serif; font-size: 22px; font-weight: 300; color: var(--g3); cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0; }
+.modal-x:hover   { background: var(--g1); color: var(--black); }
+
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+/* RR toggle (header) */
+.rr-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--g4);
+  border: 1px solid var(--g2);
+  border-radius: 4px;
+  padding: .4rem .85rem;
+  cursor: pointer;
+  transition: all .12s;
+  user-select: none;
+  white-space: nowrap;
+  line-height: 1;
+}
+.rr-toggle-label:hover { border-color: var(--blue); color: var(--blue); }
+.rr-toggle-label.is-on { border-color: var(--blue-bg); color: var(--blue); background: var(--blue-bg); }
+#rr-toggle-input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+.rr-pill {
+  display: inline-flex;
+  align-items: center;
+  width: 28px;
+  height: 15px;
+  background: var(--g2);
+  border-radius: 8px;
+  position: relative;
+  transition: background .15s;
+  flex-shrink: 0;
+}
+.rr-pill::after {
+  content: '';
+  width: 11px;
+  height: 11px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  left: 2px;
+  transition: left .15s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+}
+.rr-toggle-label.is-on .rr-pill         { background: var(--blue); }
+.rr-toggle-label.is-on .rr-pill::after  { left: 15px; }
+
+.rr-note {
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  color: var(--g4);
+  background: var(--blue-bg);
+  border-left: 2px solid var(--blue);
+  padding: .65rem .9rem;
+  border-radius: 0 4px 4px 0;
+  margin: 0 0 1rem 1.75rem;
+  line-height: 1.5;
+}
+
+/* Edit-hint banner above the statement */
+.edit-hint {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .55rem .85rem;
+  margin: 0 1.5rem 1rem;
+  background: var(--blue-bg);
+  border: 1px solid var(--blue);
+  border-radius: 4px;
+  color: var(--blue-hover);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.edit-hint .edit-hint-icon { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; color: var(--blue); }
+.edit-hint .edit-hint-text { flex: 1; }
+.edit-hint .edit-hint-text strong { color: var(--blue-hover); font-weight: 600; }
+.edit-hint .edit-hint-x    { flex-shrink: 0; background: none; border: none; color: var(--blue); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 .25rem; border-radius: 3px; font-weight: 400; }
+.edit-hint .edit-hint-x:hover { background: var(--blue); color: var(--white); }
+.edit-hint.is-hidden       { display: none; }
+
+/* RR banner — shown on stage when RR mode is on */
+.rr-banner {
+  display: none;
+  align-items: center;
+  gap: .85rem;
+  padding: .7rem 1.5rem;
+  margin: 1.25rem 1.25rem 0;
+  background: #fff8eb;
+  border: 1px solid var(--amber);
+  border-radius: 6px;
+  color: var(--g4);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.rr-banner.is-on        { display: flex; }
+.rr-banner-icon         { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--amber); color: var(--white); font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: .02em; }
+.rr-banner-text         { flex: 1; min-width: 0; }
+.rr-banner-text strong  { color: var(--black); font-weight: 600; display: inline; }
+.rr-banner-off          { flex-shrink: 0; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; background: var(--white); color: var(--amber); border: 1px solid var(--amber); padding: .35rem .75rem; border-radius: 4px; cursor: pointer; transition: all .12s; white-space: nowrap; }
+.rr-banner-off:hover    { background: var(--amber); color: var(--white); }
+
+/* Storage-disabled banner */
+.storage-banner {
+  display: none;
+  align-items: center;
+  gap: .85rem;
+  padding: .7rem 1.5rem;
+  margin: 1.25rem 1.25rem 0;
+  background: var(--blue-bg);
+  border: 1px solid var(--blue);
+  border-radius: 6px;
+  color: var(--g4);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.storage-banner.is-on { display: flex; }
+.storage-banner strong { color: var(--black); font-weight: 600; display: inline; }
+
+/* Aspect rows.
+ *
+ * Layout policy:
+ *   - On wide screens (where the aspect block has at least ~520px of room),
+ *     show the aspect label on the left and the three options as a
+ *     horizontal segmented control on the right.
+ *   - As soon as the panel narrows enough that "Partly preregistered"
+ *     would get clipped, stack the label above the options. The options
+ *     then occupy the full panel width, and each button is allowed to
+ *     wrap its text across two lines.
+ *
+ * Container queries let us key the breakpoint to the question panel's
+ * own width rather than the viewport, so the layout responds correctly
+ * regardless of whether the right preview panel is visible.
+ */
+.aspect-rows {
+  padding-left: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+  container-type: inline-size;
+}
+.aspect-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 180px) 1fr;
+  align-items: stretch;
+  gap: 1rem;
+}
+@container (max-width: 520px) {
+  .aspect-row { grid-template-columns: 1fr; gap: .35rem; }
+}
+/* Fallback for browsers that don't support container queries: use a
+ * viewport breakpoint that errs on the side of the stacked layout. */
+@media (max-width: 1200px) {
+  .aspect-row { grid-template-columns: 1fr; gap: .35rem; }
+}
+@media (min-width: 1280px) {
+  .aspect-row { grid-template-columns: minmax(140px, 180px) 1fr; }
+}
+.aspect-row-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--black);
+  display: flex;
+  align-items: center;        /* vertically centre against multi-line buttons */
+  min-height: 38px;
+}
+.aspect-seg {
+  display: flex;
+  background: var(--white);
+  border: 1px solid var(--g2);
+  border-radius: 6px;
+  overflow: hidden;
+  width: 100%;
+  min-height: 38px;
+}
+.aspect-seg-btn {
+  flex: 1 1 0;
+  min-width: 0;                /* allow buttons to shrink below intrinsic width */
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--g4);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--g2);
+  padding: .5rem .55rem;
+  cursor: pointer;
+  transition: background .1s, color .1s;
+  white-space: normal;          /* allow text to wrap inside the button */
+  line-height: 1.2;
+  text-align: center;
+  letter-spacing: -.005em;
+  hyphens: auto;
+}
+.aspect-seg-btn:last-child  { border-right: none; }
+.aspect-seg-btn:hover       { background: var(--g1); color: var(--black); }
+.aspect-seg-btn.is-on       { background: var(--blue); color: var(--white); }
+.aspect-seg-btn.is-on:hover { background: var(--blue-hover); }
+.aspect-seg-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; position: relative; z-index: 1; }
+
+/* Footer */
+.app-footer    { padding: .45rem 2rem; background: var(--white); border-top: 1px solid var(--g2); display: flex; align-items: center; justify-content: flex-end; min-height: 28px; }
+.version-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--g3); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <span class="hw"><span class="hw-journal">Psychological Science</span> <span class="hw-sep">|</span> Research Transparency Statement builder</span>
+  <div class="hdr-right">
+    <span class="save-ind" id="save-ind" role="status" aria-live="polite"
+          title="Bright green dot = a save just happened. Dim green dot = your draft is saved and the autosave is idle until your next change. Amber = your browser isn't saving drafts."></span>
+    <input type="checkbox" id="rr-toggle-input" onchange="toggleRR(this.checked)">
+    <label class="rr-toggle-label" id="rr-toggle-label" for="rr-toggle-input"
+           title="Toggle Stage 1 Registered Report mode — changes AI, preregistration, data, and analysis disclosures to future tense">
+      <span class="rr-pill" aria-hidden="true"></span>Stage 1 Registered Report?
+    </label>
+    <button class="btn-help" onclick="openHelpModal()" title="How this app works">
+      <svg class="icon-glyph" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="8" cy="8" r="6.25"/>
+        <path d="M6.2 6.4a1.8 1.8 0 1 1 2.55 1.65c-.55.27-.75.6-.75 1.15v.3"/>
+        <circle cx="8" cy="11.6" r=".55" fill="currentColor" stroke="none"/>
+      </svg>Help
+    </button>
+    <button class="btn-reset" onclick="resetAll()" title="Reset all answers and remove extra studies">
+      <svg class="icon-glyph" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2.8 8a5.2 5.2 0 1 0 1.6-3.75L2.5 5.7"/>
+        <path d="M2.4 2.4v3.4h3.4"/>
+      </svg>Reset all
+    </button>
+  </div>
+</header>
+
+<div class="storage-banner" id="storage-banner" role="status">
+  <span><strong>Heads up:</strong> your browser isn't saving drafts (private browsing or storage disabled). Keep this tab open until you've copied your statement, or your work will be lost on refresh.</span>
+</div>
+
+<div class="nav-panel-wrap">
+  <div class="nav-panel">
+    <div class="arrow-row" id="arrow-row" aria-hidden="true">
+      <div class="arrow-indicator" id="arrow-indicator">
+        <span class="arrow-label" id="arrow-label">Start here</span>
+        <span class="arrow-chevron">▼</span>
+      </div>
+    </div>
+    <nav class="stepper" id="stepper" aria-label="Section progress"></nav>
+  </div>
+</div>
+
+<div class="rr-banner" id="rr-banner" role="status">
+  <span class="rr-banner-icon" aria-hidden="true">RR</span>
+  <span class="rr-banner-text"><strong>Stage 1 Registered Report mode</strong></span>
+  <button class="rr-banner-off" type="button" onclick="toggleRRFromBanner()">Switch off</button>
+</div>
+
+<div class="app">
+
+  <div class="q-panel">
+    <div class="panel-header">
+      <span class="panel-icon" aria-hidden="true">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 2.5L13.5 5 5 13.5H2.5V11L11 2.5z"/>
+          <path d="M9.5 4l2.5 2.5"/>
+        </svg>
+      </span>Statement builder
+    </div>
+    <div class="q-panel-body">
+      <div class="q-gap"></div>
+      <span class="q-arrow" id="q-arrow" aria-hidden="true">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 3l5 5-5 5"/>
+        </svg>
+      </span>
+      <div id="qc"></div>
+    </div>
+  </div>
+
+  <div class="p-panel">
+    <div class="panel-header">
+      <span class="panel-icon" aria-hidden="true">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="2" width="10" height="12" rx="1"/>
+          <path d="M5.5 6h5M5.5 8.5h5M5.5 11h3"/>
+        </svg>
+      </span>Statement preview
+    </div>
+    <div class="p-panel-body">
+      <div class="p-gap"></div>
+      <div class="edit-hint" id="edit-hint">
+        <span class="edit-hint-icon" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 2.5L13.5 5 5 13.5H2.5V11L11 2.5z"/>
+            <path d="M9.5 4l2.5 2.5"/>
+          </svg>
+        </span>
+        <span class="edit-hint-text"><strong>Tip:</strong> click any line in the statement below to edit it directly. The journal's standard wording will return as soon as you reset.</span>
+        <button class="edit-hint-x" type="button" onclick="dismissEditHint()" aria-label="Dismiss tip">×</button>
+      </div>
+      <div class="p-top">
+        <div class="stmt-box">
+          <div class="stmt-bar" aria-hidden="true"></div>
+          <div class="stmt-head">
+            <span class="stmt-head-title">Research Transparency Statement</span>
+            <div class="stmt-head-controls">
+              <button class="reset-stmt-btn" id="reset-stmt-btn" onclick="resetStmt()" title="Discard manual edits and rebuild from your answers">
+                <svg class="icon-glyph" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2.8 8a5.2 5.2 0 1 0 1.6-3.75L2.5 5.7"/>
+                  <path d="M2.4 2.4v3.4h3.4"/>
+                </svg>Reset to auto
+              </button>
+            </div>
+          </div>
+          <div class="stmt-body" id="stmt-body" spellcheck="true"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="app-footer" aria-label="App version">
+  <span class="version-label">v3.1</span>
+</footer>
+
+<dialog id="help-modal" class="modal" aria-labelledby="modal-title">
+  <div class="modal-inner">
+    <div class="modal-head">
+      <button class="modal-x" onclick="closeHelpModal()" aria-label="Close">×</button>
+      <h2 class="modal-title" id="modal-title">How the RTS Builder works</h2>
+    </div>
+    <div class="modal-body">
+      <p>This free tool helps you compose a Research Transparency Statement (RTS) for your manuscript that aligns with <a href="https://www.psychologicalscience.org/publications/psychological_science/ps-submissions#rts" target="_blank" rel="noopener" style="color:var(--blue)">the policies of Psychological Science</a>. The tool uses the journal's standard language when possible, but allows you the flexibility to edit anything manually if you need to.</p>
+      <ol class="modal-steps">
+        <li><strong>Answer the questions</strong> In the Statement Builder panel on the left, answer questions about your research.</li>
+        <li><strong>Watch the live preview</strong> As you answer questions, an RTS will build in the Statement Preview panel on the right.</li>
+        <li><strong>Use the guidance icons</strong> Click the <span style="color:var(--blue)">ⓘ</span> icon to read the journal's policies for each disclosure statement.</li>
+        <li><strong>Use the navigation tabs</strong> Use the tabs at the top of the page to navigate between the General Disclosures section and Study Sections. Add new studies as necessary.</li>
+        <li><strong>Manually edit if necessary</strong> Click any statement in the Preview to manually edit it. Click the ↻ button on a statement to revert to the auto-generated wording.</li>
+        <li><strong>Copy the final statement</strong> When you're done, copy the statement and paste it into your manuscript.</li>
+        <li><strong>Reset all</strong> Use the <em>↺ Reset all</em> button in the upper right to discard everything and start fresh.</li>
+      </ol>
+      <p style="margin-top:1.1rem;font-size:14px;font-weight:600;color:var(--black)">Notes</p>
+      <ul style="margin:.4rem 0 0 1.15rem;padding:0;display:flex;flex-direction:column;gap:.5rem">
+        <li style="font-family:'Inter',sans-serif;font-size:14px;line-height:1.55;color:var(--g4)">A green "saved" indicator in the upper right of the app indicates that your work is being auto-saved to this browser — you can come back later and your draft will still be here. If the indicator is amber, drafts are <em>not</em> being saved due to a technical problem.</li>
+        <li style="font-family:'Inter',sans-serif;font-size:14px;line-height:1.55;color:var(--g4)">If you are preparing a Stage 1 Registered Report, toggle the switch in the upper right of the app.</li>
+      </ul>
+    </div>
+    <div class="modal-foot">
+      <span class="modal-feedback">Questions or feedback? Email <a href="mailto:psych.star.team@gmail.com?subject=RTS%20builder">psych.star.team@gmail.com</a></span>
+      <button class="modal-close" onclick="closeHelpModal()">Got it</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="guidance-modal" class="modal" aria-labelledby="guidance-modal-title">
+  <div class="modal-inner">
+    <div class="modal-head">
+      <button class="modal-x" onclick="closeGuidanceModal()" aria-label="Close">×</button>
+      <h2 class="modal-title" id="guidance-modal-title">—</h2>
+    </div>
+    <div class="modal-body">
+      <div id="guidance-modal-body">—</div>
+      <p style="margin-top:1.1rem;font-size:13px;color:var(--g3);border-top:1px solid var(--g2);padding-top:.85rem">Still need help? Email <a href="mailto:psych.star.team@gmail.com?subject=RTS%20builder" style="color:var(--blue)">psych.star.team@gmail.com</a></p>
+    </div>
+    <div class="modal-foot">
+      <button class="modal-close" onclick="closeGuidanceModal()">Got it</button>
+    </div>
+  </div>
+</dialog>
+
+
+
+<script>
+// =============================================================
+// RTS Builder — v3.1
+//
+// Loads policy from rts-config.js and helpers from rts-utils.js.
+// All policy wording lives in rts-config.js so the Validator and
+// the Builder cannot drift apart.
+//
+// Public functions referenced from inline onclick handlers:
+//   openHelpModal, closeHelpModal,
+//   openGuidanceModal (via makeGuidanceBtn), closeGuidanceModal,
+//   toggleRR, toggleRRFromBanner,
+//   resetAll, resetStmt,
+//   dismissEditHint, copyStmt
+// =============================================================
+
+const {
+  $, safeStorage, esc, isValidUrl, normalizeWhitespace,
+  applyRROverlay, buildPreregistration, placeholderText,
+  confirmAsync, alertAsync,
+} = RTS;
+
+// =============================================================
+// PERSISTENCE KEYS
+// =============================================================
+const STORAGE_KEY    = 'rts-builder-state-v1';
+const HELP_SHOWN_KEY = 'rts-builder-help-shown-v1';
+const EDIT_HINT_KEY  = 'rts-builder-edit-hint-dismissed-v1';
+
+const DEFAULT_MAX_STUDIES = 5;
+
+// =============================================================
+// APP STATE
+// All mutable runtime state in one place.
+// =============================================================
+const App = {
+  cfg:    null,    // EFFECTIVE config (with dynamic study sections + RR overlay)
+  cfgRaw: null,    // RAW parsed YAML, never mutated
+  st:     {},      // { sectionKey: { qid: value, ... }, ... } — form answers
+  activeSection: null,
+  isRR:   false,   // Stage 1 Registered Report mode
+
+  // Per-component edit tracking
+  componentEdits:        {},   // { componentId: "manual text" } — overrides auto-rendered text
+  componentLastAutoText: {},   // { componentId: "auto-text last seen" } — used to detect when form changes affect a component
+  componentSuppressed:   {},   // { componentId: true } — user opted to keep edits; cleared on new manual edit or reset
+
+  // Multi-study state
+  studies:           [],       // ordered array of stable study indices, e.g. [1, 2, 3]
+  nextStudyIdx:      1,        // monotonic counter for new study IDs (preserves state on remove)
+  studiesInitialized: false,
+
+  // Render bookkeeping
+  initialPreviewDone:  false,
+  sectionCompleteCache: {},
+};
+
+// =============================================================
+// SMALL HELPERS
+// =============================================================
+function maxStudies() {
+  return App.cfgRaw?.defaults?.max_studies || DEFAULT_MAX_STUDIES;
+}
+
+function initStudies() {
+  App.studies = [];
+  App.nextStudyIdx = 1;
+  const num = Math.max(1, Math.min(maxStudies(), App.cfgRaw?.defaults?.num_studies || 1));
+  for (let i = 0; i < num; i++) App.studies.push(App.nextStudyIdx++);
+}
+
+function resetRRToggle() {
+  $('rr-toggle-label')?.classList.remove('is-on');
+  const inp = $('rr-toggle-input');
+  if (inp) inp.checked = false;
+  $('rr-banner')?.classList.remove('is-on');
+}
+
+// Wipe form state and re-initialise. Called from resetAll().
+async function performReset() {
+  App.st                    = {};
+  App.isRR                  = false;
+  App.studiesInitialized    = false;
+  App.componentEdits        = {};
+  App.componentSuppressed   = {};
+  App.componentLastAutoText = {};
+  initStudies();
+  rebuildSections();
+  Object.keys(App.cfg.sections).forEach(k => { App.st[k] = {}; });
+  App.activeSection = Object.keys(App.cfg.sections)[0];
+  clearSavedState();
+  resetRRToggle();
+  $('save-ind')?.classList.remove('show', 'fade', 'warn');
+  renderTabs();
+  renderSection();
+}
+
+// Sanity-check the loaded config; logs warnings if anything looks off.
+function runStartupChecks() {
+  if (!App.cfg || !App.cfg.sections) {
+    console.warn('[startup-check] cfg.sections is missing — RTS Builder cannot render.');
+    return;
+  }
+  const sectionKeys = Object.keys(App.cfg.sections);
+  if (sectionKeys.length === 0) {
+    console.warn('[startup-check] No sections defined in YAML config.');
+    return;
+  }
+  sectionKeys.forEach(k => {
+    const sect = App.cfg.sections[k];
+    const hasSubs = sect.subsections && Object.keys(sect.subsections).length > 0;
+    const hasQs   = sect.questions   && Object.keys(sect.questions).length > 0;
+    if (!hasSubs && !hasQs) {
+      console.warn('[startup-check] Section ' + k + ' has no questions or subsections.');
+    }
+  });
+  if (!Array.isArray(App.studies) || App.studies.length === 0) {
+    console.warn('[startup-check] studies array is empty — at least one study is expected.');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Try to restore previous session BEFORE loading config (load() will use
+  // restored st/studies/activeSection if present).
+  const restoredTs = loadSavedState();
+
+  // Sync the RR toggle visual after restoring saved state.
+  if (App.isRR) {
+    $('rr-toggle-label')?.classList.add('is-on');
+    const inp = $('rr-toggle-input');
+    if (inp) inp.checked = true;
+    $('rr-banner')?.classList.add('is-on');
+  }
+
+  load(globalThis.RTS_CONFIG_YAML);
+  if (restoredTs) flashRestored(restoredTs);
+  maybeShowEditHint();
+  maybeShowStorageWarning();
+
+  // Welcome modal on first visit.
+  setTimeout(() => maybeShowWelcomeModal(!!restoredTs), 350);
+
+  // Backdrop-click closes the help modal.
+  const helpModal = $('help-modal');
+  helpModal.addEventListener('click', (e) => {
+    const r = helpModal.getBoundingClientRect();
+    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    if (!inside) closeHelpModal();
+  });
+  helpModal.addEventListener('close', () => { safeStorage.set(HELP_SHOWN_KEY, '1'); });
+});
+
+// =============================================================
+// HELP MODAL
+// =============================================================
+function openHelpModal() {
+  const m = $('help-modal');
+  $('modal-title').textContent = 'How the RTS Builder works';
+  if (!m.open) m.showModal();
+}
+
+function closeHelpModal() {
+  const m = $('help-modal');
+  if (m.open) m.close();
+  safeStorage.set(HELP_SHOWN_KEY, '1');
+}
+
+function maybeShowWelcomeModal(skipBecauseRestored) {
+  if (skipBecauseRestored) {
+    safeStorage.set(HELP_SHOWN_KEY, '1');
+    return;
+  }
+  const seen = safeStorage.get(HELP_SHOWN_KEY) === '1';
+  if (seen) return;
+  const m = $('help-modal');
+  $('modal-title').textContent = 'How the RTS Builder works';
+  if (!m.open) m.showModal();
+}
+
+// =============================================================
+// LOCAL STORAGE — auto-save & restore
+// =============================================================
+let _saveTimer = null;
+let _saveFlashTimer = null;
+
+function saveState() {
+  // Debounce so a burst of typing doesn't hammer storage.
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(_saveStateNow, 350);
+}
+
+function _saveStateNow() {
+  const data = {
+    v: 1,
+    schemaHash: configSchemaHash(),
+    st: App.st,
+    componentEdits: App.componentEdits,
+    componentSuppressed: App.componentSuppressed,
+    studies: App.studies,
+    nextStudyIdx: App.nextStudyIdx,
+    activeSection: App.activeSection,
+    isRR: App.isRR,
+    ts: Date.now(),
+  };
+  if (safeStorage.set(STORAGE_KEY, JSON.stringify(data))) flashSaved();
+  // If safeStorage.set returned false (quota or private browsing), the
+  // storage-disabled banner will already be visible from page load.
+}
+
+function loadSavedState() {
+  const raw = safeStorage.get(STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    const data = JSON.parse(raw);
+    if (data.v !== 1) return null;
+    App.st                  = data.st || {};
+    App.componentEdits      = data.componentEdits || {};
+    App.componentSuppressed = data.componentSuppressed || {};
+    if (Array.isArray(data.studies) && data.studies.length > 0) {
+      App.studies = data.studies;
+      App.nextStudyIdx = data.nextStudyIdx || (Math.max(...App.studies) + 1);
+      App.studiesInitialized = true;
+    }
+    if (data.activeSection) App.activeSection = data.activeSection;
+    if (typeof data.isRR === 'boolean') App.isRR = data.isRR;
+    // Schema migration runs after the config is loaded (we can't compare
+    // schemaHash until then). The deferred migration happens in load().
+    App._restoredSchemaHash = data.schemaHash || null;
+    return data.ts || Date.now();
+  } catch (e) {
+    console.warn('Saved RTS draft was corrupted; starting fresh:', e);
+    safeStorage.remove(STORAGE_KEY);
+    return null;
+  }
+}
+
+function clearSavedState() {
+  safeStorage.remove(STORAGE_KEY);
+}
+
+// Drop unknown question keys from restored state. Runs after the
+// effective config is built. If the YAML schema changed, any answers
+// referencing questions that no longer exist are silently discarded
+// rather than persisting as ghost state.
+function migrateState() {
+  const validQids = new Set();
+  Object.values(App.cfg.sections).forEach(sect => {
+    if (sect.subsections) {
+      Object.values(sect.subsections).forEach(sub => {
+        Object.keys(sub.questions || {}).forEach(qid => validQids.add(qid));
+      });
+    }
+    Object.keys(sect.questions || {}).forEach(qid => validQids.add(qid));
+  });
+
+  let dropped = 0;
+  Object.keys(App.st).forEach(sectKey => {
+    if (!App.cfg.sections[sectKey]) {
+      // Section no longer exists; drop its state too.
+      delete App.st[sectKey];
+      dropped++;
+      return;
+    }
+    Object.keys(App.st[sectKey]).forEach(qid => {
+      if (!validQids.has(qid)) {
+        delete App.st[sectKey][qid];
+        dropped++;
+      }
+    });
+  });
+  if (dropped > 0) {
+    console.info('[migrate] Dropped ' + dropped + ' stale field(s) from saved draft.');
+  }
+}
+
+// Cheap schema fingerprint — sorted list of section/question IDs.
+// We only need to detect change, not reconstruct.
+function configSchemaHash() {
+  const ids = [];
+  Object.entries(App.cfg.sections).forEach(([sectKey, sect]) => {
+    ids.push('S:' + sectKey);
+    if (sect.subsections) {
+      Object.entries(sect.subsections).forEach(([subKey, sub]) => {
+        ids.push('SS:' + subKey);
+        Object.keys(sub.questions || {}).forEach(qid => ids.push('Q:' + qid));
+      });
+    }
+    Object.keys(sect.questions || {}).forEach(qid => ids.push('Q:' + qid));
+  });
+  return ids.sort().join('|');
+}
+
+function flashSaved() {
+  const el = $('save-ind');
+  if (!el) return;
+  clearTimeout(_saveFlashTimer);
+  el.textContent = 'Saved';
+  el.classList.remove('fade', 'warn');
+  el.classList.add('show');
+  _saveFlashTimer = setTimeout(() => { el.classList.add('fade'); }, 1100);
+}
+
+function flashRestored(ts) {
+  const el = $('save-ind');
+  if (!el) return;
+  const ago = Date.now() - ts;
+  let when;
+  if      (ago < 60_000)     when = 'just now';
+  else if (ago < 3600_000)   when = Math.round(ago / 60_000) + ' min ago';
+  else if (ago < 86_400_000) when = Math.round(ago / 3600_000) + ' hr ago';
+  else                       when = new Date(ts).toLocaleDateString();
+  clearTimeout(_saveFlashTimer);
+  el.textContent = 'Draft restored · ' + when;
+  el.classList.remove('fade', 'warn');
+  el.classList.add('show');
+  _saveFlashTimer = setTimeout(() => { el.classList.add('fade'); el.textContent = 'Saved'; }, 4000);
+}
+
+function maybeShowStorageWarning() {
+  if (safeStorage.available()) return;
+  // Show a persistent banner — this is more important than a one-time toast.
+  $('storage-banner')?.classList.add('is-on');
+  // Mirror in the save indicator so it's visible from the header.
+  const el = $('save-ind');
+  if (el) {
+    el.textContent = 'Drafts not saving';
+    el.classList.add('show', 'warn');
+    el.title = 'localStorage is unavailable in this browser tab — your work will be lost on refresh.';
+  }
+}
+
+// =============================================================
+// STAGE 1 REGISTERED REPORT TOGGLE
+// =============================================================
+function toggleRR(checked) {
+  App.isRR = !!checked;
+  $('rr-toggle-label').classList.toggle('is-on', App.isRR);
+  $('rr-banner').classList.toggle('is-on', App.isRR);
+  saveState();
+  rebuildSections();
+  if (!App.activeSection || !App.cfg.sections[App.activeSection]) {
+    App.activeSection = Object.keys(App.cfg.sections)[0];
+  }
+  Object.keys(App.cfg.sections).forEach(k => { if (!App.st[k]) App.st[k] = {}; });
+  renderTabs();
+  renderSection();
+}
+
+function toggleRRFromBanner() {
+  const inp = $('rr-toggle-input');
+  if (inp) inp.checked = false;
+  toggleRR(false);
+}
+
+// =============================================================
+// EDIT HINT
+// =============================================================
+function dismissEditHint() {
+  $('edit-hint')?.classList.add('is-hidden');
+  safeStorage.set(EDIT_HINT_KEY, '1');
+}
+function maybeShowEditHint() {
+  const dismissed = safeStorage.get(EDIT_HINT_KEY) === '1';
+  if (dismissed) $('edit-hint')?.classList.add('is-hidden');
+}
+
+// =============================================================
+// RESET
+// =============================================================
+async function resetAll() {
+  const ok = await confirmAsync(
+    'Reset all answers across all sections, and reset to a single study?',
+    { title: 'Reset all answers?', okLabel: 'Reset all', danger: true }
+  );
+  if (!ok) return;
+  await performReset();
+}
+
+// =============================================================
+// COMPONENT EDIT TRACKING
+// =============================================================
+function onComponentInput(e) {
+  const div = e.target.closest('.component');
+  if (!div) return;
+  const id  = div.dataset.cid;
+  const txt = e.target.innerText;
+  App.componentEdits[id]      = txt;
+  App.componentSuppressed[id] = false;
+  div.classList.add('has-edit');
+  updateGlobalEditBadge();
+  saveState();
+}
+
+function resetComponent(id) {
+  delete App.componentEdits[id];
+  delete App.componentSuppressed[id];
+  updatePreview();
+  saveState();
+}
+
+function updateGlobalEditBadge() {
+  const hasAny = Object.keys(App.componentEdits).length > 0;
+  $('reset-stmt-btn').classList.toggle('show', hasAny);
+}
+
+// Friendly label for prompts: "General Disclosures → Funding"
+function getComponentLabel(id) {
+  const [sectKey, subKey] = id.split('/');
+  const sect = App.cfg.sections[sectKey];
+  if (!sect) return id;
+  if (subKey && sect.subsections && sect.subsections[subKey]) {
+    const sub = sect.subsections[subKey];
+    return sect.label + ' → ' + (sub.statement_label || sub.heading || subKey);
+  }
+  return sect.label;
+}
+
+// Gate updatePreview behind per-component confirmation prompts.
+async function tryUpdatePreview() {
+  // Compute new auto-text for every component the app currently produces
+  const newAutos = {};
+  Object.keys(App.cfg.sections).forEach(sectKey => {
+    buildSectionComponents(sectKey).forEach(c => { newAutos[c.id] = c.body; });
+  });
+
+  // Edited components whose auto-text actually changed (a form change
+  // really would clobber their manual text), excluding suppressed ones.
+  const conflicts = Object.keys(App.componentEdits).filter(id => {
+    if (App.componentSuppressed[id]) return false;
+    if (newAutos[id] === undefined) return false;
+    return newAutos[id] !== (App.componentLastAutoText[id] ?? '');
+  });
+
+  // Any component whose auto-text changed or newly appeared — used for
+  // post-render scroll targeting.
+  const changedIds = Object.keys(newAutos).filter(id => {
+    return newAutos[id] !== App.componentLastAutoText[id];
+  });
+
+  if (conflicts.length > 0) {
+    const labels = conflicts.map(getComponentLabel);
+    const msg = labels.length === 1
+      ? `You have manual edits to "${labels[0]}".\n\nDo you want to overwrite them with your updated answers?`
+      : `You have manual edits to:\n\n${labels.map(l => '  • ' + l).join('\n')}\n\nDo you want to overwrite them with your updated answers?`;
+    const ok = await confirmAsync(msg, {
+      title: 'Overwrite manual edits?',
+      okLabel: 'Overwrite',
+      cancelLabel: 'Keep my edits',
+      danger: true,
+    });
+    if (ok) {
+      conflicts.forEach(id => delete App.componentEdits[id]);
+    } else {
+      conflicts.forEach(id => { App.componentSuppressed[id] = true; });
+    }
+  }
+  updatePreview();
+  saveState();
+
+  if (App.initialPreviewDone && changedIds.length > 0) {
+    const preferred = changedIds.find(id => id === App.activeSection || id.startsWith(App.activeSection + '/'))
+                   || changedIds[0];
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`.component[data-cid="${cssEscape(preferred)}"]`);
+      if (!el) return;
+      const panel    = document.querySelector('.p-panel-body');
+      const elRect   = el.getBoundingClientRect();
+      const panRect  = panel.getBoundingClientRect();
+      const targetY  = panRect.height * 0.22;
+      const currentY = elRect.top - panRect.top;
+      const delta    = currentY - targetY;
+      if (Math.abs(delta) > 12) {
+        panel.scrollTo({ top: panel.scrollTop + delta, behavior: 'smooth' });
+      }
+      el.classList.remove('just-changed');
+      void el.offsetWidth;                               // force reflow to retrigger animation
+      el.classList.add('just-changed');
+    });
+  }
+  if (App.initialPreviewDone) checkAutoAdvance();
+  App.initialPreviewDone = true;
+}
+
+function checkAutoAdvance() {
+  const stats = sectionStats(App.activeSection);
+  const isComplete = stats.vis > 0 && stats.done === stats.vis;
+  const prevComplete = App.sectionCompleteCache[App.activeSection];
+  App.sectionCompleteCache[App.activeSection] = isComplete;
+  if (isComplete !== prevComplete) renderTabs();
+}
+
+function cssEscape(s) {
+  if (window.CSS && CSS.escape) return CSS.escape(s);
+  return String(s).replace(/[^a-zA-Z0-9_-]/g, ch => '\\' + ch);
+}
+
+function load(yaml) {
+  try {
+    App.cfgRaw = jsyaml.load(yaml);
+    if (!App.studiesInitialized) {
+      initStudies();
+      App.studiesInitialized = true;
+    }
+    rebuildSections();
+    if (!App.activeSection || !App.cfg.sections[App.activeSection]) {
+      App.activeSection = Object.keys(App.cfg.sections)[0];
+    }
+    Object.keys(App.cfg.sections).forEach(k => { if (!App.st[k]) App.st[k] = {}; });
+
+    // Apply schema migration if the saved draft used an older schema.
+    if (App._restoredSchemaHash && App._restoredSchemaHash !== configSchemaHash()) {
+      console.info('[migrate] Schema changed since last save — pruning stale state.');
+      migrateState();
+    }
+    renderTabs();
+    renderSection();
+    runStartupChecks();
+  } catch (e) {
+    console.error('Failed to load RTS configuration:', e);
+    document.body.insertAdjacentHTML('afterbegin',
+      '<div style="background:#fff0ee;border:1px solid #b04030;color:#b04030;padding:1rem;font-family:sans-serif;font-size:14px">'
+      + 'Failed to load the RTS Builder configuration. Please refresh the page or contact support if the problem persists.<br>'
+      + 'Technical detail: ' + (e.message || e) + '</div>');
+  }
+}
+
+// Build the effective sections from raw config + studies array.
+// Order: general_disclosures (and any other static sections) first, then studies.
+function rebuildSections() {
+  App.cfg = { sections: {} };
+  Object.entries(App.cfgRaw.sections || {}).forEach(([k, v]) => {
+    App.cfg.sections[k] = JSON.parse(JSON.stringify(v));
+  });
+  // Dynamic study sections, labelled by POSITION but keyed by stable idx.
+  if (App.cfgRaw.study_template && App.cfgRaw.study_template.subsections) {
+    App.studies.forEach((idx, position) => {
+      const studyKey = 'study_' + idx;
+      App.cfg.sections[studyKey] = {
+        label: 'Study ' + (position + 1),
+        isStudy: true,
+        studyIndex: idx,
+        subsections: JSON.parse(JSON.stringify(App.cfgRaw.study_template.subsections)),
+      };
+    });
+  }
+  // Apply Stage 1 RR transformations via shared overlay.
+  if (App.isRR && App.cfgRaw.rr_overlay) {
+    const studyKeys = App.studies.map(idx => 'study_' + idx);
+    applyRROverlay(App.cfg, App.cfgRaw.rr_overlay, studyKeys);
+  }
+}
+
+async function addStudy() {
+  if (App.studies.length >= maxStudies()) return;
+  const newIdx = App.nextStudyIdx++;
+  App.studies.push(newIdx);
+  App.st['study_' + newIdx] = {};
+  rebuildSections();
+  App.activeSection = 'study_' + newIdx;
+  await tryUpdatePreview();
+  renderTabs();
+  renderSection();
+}
+
+async function removeStudy(idx) {
+  if (App.studies.length <= 1) return;
+  const studyKey = 'study_' + idx;
+  const position = App.studies.indexOf(idx);
+  const ok = await confirmAsync(
+    `Remove Study ${position + 1}? All answers for this study will be permanently deleted.`,
+    { title: 'Remove study?', okLabel: 'Remove', danger: true }
+  );
+  if (!ok) return;
+  delete App.st[studyKey];
+  const prefix = studyKey + '/';
+  Object.keys(App.componentEdits).forEach(id => { if (id.startsWith(prefix)) delete App.componentEdits[id]; });
+  Object.keys(App.componentSuppressed).forEach(id => { if (id.startsWith(prefix)) delete App.componentSuppressed[id]; });
+  Object.keys(App.componentLastAutoText).forEach(id => { if (id.startsWith(prefix)) delete App.componentLastAutoText[id]; });
+  App.studies = App.studies.filter(i => i !== idx);
+  rebuildSections();
+  if (App.activeSection === studyKey) {
+    App.activeSection = Object.keys(App.cfg.sections)[0];
+  }
+  updatePreview();
+  renderTabs();
+  renderSection();
+}
+
+// =============================================================
+// VISIBILITY / COMPLETENESS
+// =============================================================
+function isVis(q, sectKey) {
+  if (!q.depends_on) return true;
+  const sectSt = App.st[sectKey];
+  return Object.entries(q.depends_on).every(([id, v]) => sectSt[id] === v);
+}
+
+function isDone(q, sectKey) {
+  const v = App.st[sectKey][q.id];
+  if (q.optional) return true;     // optional fields never block completion
+  if (q.type === 'url')           return !!(v && v.length > 3);
+  if (q.type === 'text')          return !!(v && v.trim().length > 0);
+  if (q.type === 'textarea')      return !!(v && v.trim().length > 0);
+  if (q.type === 'aspects_table') return !!(v && q.aspects.every(a => v[a.id]));
+  if (q.type === 'checkboxes')    return !!(v && Object.values(v).some(x => x?.checked));
+  return !!v;
+}
+
+function sectionStats(sectKey) {
+  const qs = getAllQuestions(sectKey);
+  let vis = 0, done = 0;
+  Object.entries(qs).forEach(([id, q]) => {
+    const qq = { ...q, id };
+    if (isVis(qq, sectKey)) { vis++; if (isDone(qq, sectKey)) done++; }
+  });
+  return { vis, done };
+}
+
+function getAllQuestions(sectKey) {
+  const sect = App.cfg.sections[sectKey];
+  if (sect.subsections) {
+    const all = {};
+    Object.values(sect.subsections).forEach(sub => {
+      Object.assign(all, sub.questions || {});
+    });
+    return all;
+  }
+  return sect.questions || {};
+}
+
+// True if every visible section has been completed.
+function isStatementComplete() {
+  return Object.keys(App.cfg.sections).every(k => {
+    const s = sectionStats(k);
+    return s.vis > 0 && s.done === s.vis;
+  });
+}
+</script>
+<script>
+// =============================================================
+// TABS / STEPPER
+// =============================================================
+function renderTabs() {
+  const el = $('stepper');
+  el.innerHTML = '';
+
+  let prevWasStudy = false;
+  Object.entries(App.cfg.sections).forEach(([key, sect], i) => {
+    if (sect.isStudy && !prevWasStudy && i > 0) {
+      const sep = document.createElement('span');
+      sep.className = 'step-sep';
+      sep.setAttribute('aria-hidden', 'true');
+      el.appendChild(sep);
+    }
+
+    const stats = sectionStats(key);
+    const isActive     = key === App.activeSection;
+    const isComplete   = stats.vis > 0 && stats.done === stats.vis;
+    const isIncomplete = stats.vis > 0 && stats.done < stats.vis;
+
+    const step = document.createElement('button');
+    step.className = 'step';
+    step.type = 'button';
+    step.dataset.key = key;                                  // used by updateProgressArrow
+    if (isActive)         step.classList.add('is-active');
+    if (isComplete)       step.classList.add('is-complete');
+    else if (isIncomplete)step.classList.add('is-incomplete');
+    else                  step.classList.add('is-todo');
+    step.onclick = () => {
+      App.activeSection = key;
+      saveState();
+      renderTabs();
+      renderSection();
+      document.querySelector('.q-panel-body').scrollTop = 0;
+    };
+
+    const lbl = document.createElement('span');
+    lbl.className = 'step-label';
+    lbl.textContent = sect.label;
+    step.append(lbl);
+
+    if (sect.isStudy && App.studies.length > 1) {
+      const rm = document.createElement('button');
+      rm.className = 'step-remove';
+      rm.type = 'button';
+      rm.textContent = '×';
+      rm.title = 'Remove ' + sect.label;
+      rm.setAttribute('aria-label', 'Remove ' + sect.label);
+      rm.onclick = (e) => { e.stopPropagation(); removeStudy(sect.studyIndex); };
+      step.appendChild(rm);
+    }
+
+    if (stats.vis > 0) {
+      step.title = isComplete
+        ? sect.label + ' — complete'
+        : sect.label + ' — ' + stats.done + ' of ' + stats.vis + ' answered';
+    } else {
+      step.title = sect.label;
+    }
+
+    el.appendChild(step);
+    prevWasStudy = sect.isStudy;
+  });
+
+  // "+ Add study" chip
+  if (App.cfgRaw?.study_template && App.studies.length < maxStudies()) {
+    const addStep = document.createElement('button');
+    addStep.className = 'step-add';
+    addStep.type = 'button';
+    addStep.title = 'Add another study (up to ' + maxStudies() + ' total)';
+    addStep.onclick = addStudy;
+    const plus = document.createElement('span');
+    plus.className = 'step-add-plus';
+    plus.textContent = '+';
+    plus.setAttribute('aria-hidden', 'true');
+    const lab = document.createElement('span');
+    lab.textContent = 'Add study';
+    addStep.append(plus, lab);
+    el.appendChild(addStep);
+  }
+
+  // "Copy statement" button — always clickable. If the statement is
+  // incomplete, copyStmt() shows a confirmation modal first.
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'copy-btn-inline';
+  copyBtn.id = 'copy-btn';
+  copyBtn.type = 'button';
+  copyBtn.textContent = 'Copy statement';
+  copyBtn.onclick = copyStmt;
+  copyBtn.title = isStatementComplete()
+    ? 'Copy the full statement to your clipboard'
+    : 'Copy the statement (you will be warned if any sections are still incomplete)';
+  el.appendChild(copyBtn);
+
+  requestAnimationFrame(updateProgressArrow);
+}
+
+// Points an arrow at the first incomplete section; toggles a body
+// class used to elevate the Copy button once everything is done.
+function updateProgressArrow() {
+  const row       = $('arrow-row');
+  const indicator = $('arrow-indicator');
+  const labelEl   = $('arrow-label');
+  const stepper   = $('stepper');
+  if (!row || !indicator || !stepper) return;
+
+  const keys = Object.keys(App.cfg.sections);
+
+  const recommendedKey = keys.find(k => {
+    const s = sectionStats(k);
+    return s.vis > 0 && s.done < s.vis;
+  });
+
+  const gdKey  = keys.find(k => !App.cfg.sections[k].isStudy);
+  const gdDone = gdKey && (() => { const s = sectionStats(gdKey); return s.vis > 0 && s.done === s.vis; })();
+  const anyStudyDone = App.studies.some(idx => {
+    const s = sectionStats('study_' + idx);
+    return s.vis > 0 && s.done === s.vis;
+  });
+  const anyStudyIncomplete = App.studies.some(idx => {
+    const s = sectionStats('study_' + idx);
+    return s.vis > 0 && s.done < s.vis;
+  });
+  const copyReady = !!(gdDone && anyStudyDone && !anyStudyIncomplete);
+
+  document.body.classList.toggle('is-all-done',  !recommendedKey);
+  document.body.classList.toggle('is-copy-ready', copyReady);
+
+  let target = null, label = null;
+
+  if (copyReady) {
+    target = $('copy-btn');
+    label  = "You're done — copy";
+  } else if (recommendedKey) {
+    target = stepper.querySelector(`.step[data-key="${CSS.escape(recommendedKey)}"]`);
+    const totalDone = keys.reduce((n, k) => n + sectionStats(k).done, 0);
+    label = totalDone === 0 ? 'Start here' : 'Continue here';
+  }
+
+  if (!target) {
+    row.classList.add('all-done');
+    return;
+  }
+
+  row.classList.remove('all-done');
+  const rowRect = row.getBoundingClientRect();
+  const tRect   = target.getBoundingClientRect();
+  const centerX = tRect.left + tRect.width / 2 - rowRect.left;
+  labelEl.textContent = label;
+  indicator.style.left = centerX + 'px';
+}
+
+// =============================================================
+// RENDER ACTIVE SECTION
+// =============================================================
+function renderSection() {
+  if (!App.cfg || !App.activeSection) return;
+  const sect = App.cfg.sections[App.activeSection];
+
+  const c = $('qc');
+  c.innerHTML = '';
+
+  // Copy-from-previous-study bar (only on Study 2+).
+  if (sect.isStudy) {
+    const studyPosition = App.studies.indexOf(sect.studyIndex);
+    if (studyPosition > 0) {
+      const prevStudyIdx   = App.studies[studyPosition - 1];
+      const prevStudyKey   = 'study_' + prevStudyIdx;
+      const prevStudyLabel = 'Study ' + studyPosition;
+      const bar = document.createElement('div');
+      bar.className = 'copy-from-bar';
+      bar.innerHTML = `<span class="copy-from-text">Same setup as ${esc(prevStudyLabel)}? You can copy its answers and then make any changes you need.</span>`;
+      const btn = document.createElement('button');
+      btn.className = 'copy-from-btn';
+      btn.textContent = 'Copy answers from ' + prevStudyLabel;
+      btn.onclick = () => copyAnswersFromStudy(prevStudyKey, prevStudyLabel);
+      bar.appendChild(btn);
+      c.appendChild(bar);
+    }
+  }
+
+  if (sect.subsections) {
+    Object.entries(sect.subsections).forEach(([subKey, sub]) => {
+      const h = document.createElement('div');
+      h.className = 'subsection-heading';
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'subsection-title';
+      titleSpan.textContent = sub.heading || subKey;
+      h.appendChild(titleSpan);
+      if (sub.guidance) h.appendChild(makeGuidanceBtn(sub.heading || subKey, sub.guidance));
+      c.appendChild(h);
+      if (sub.rr_static_note) {
+        const noteDiv = document.createElement('div');
+        noteDiv.className = 'rr-note';
+        noteDiv.textContent = sub.rr_static_note;
+        c.appendChild(noteDiv);
+      }
+      renderQuestionList(sub.questions || {}, c);
+    });
+  } else {
+    if (sect.guidance) {
+      const h = document.createElement('div');
+      h.className = 'subsection-heading';
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'subsection-title';
+      titleSpan.textContent = sect.statement_label || sect.label;
+      h.appendChild(titleSpan);
+      h.appendChild(makeGuidanceBtn(sect.statement_label || sect.label, sect.guidance));
+      c.appendChild(h);
+    }
+    renderQuestionList(sect.questions || {}, c);
+  }
+
+  renderTabs();
+  tryUpdatePreview();
+  requestAnimationFrame(updateQuestionArrow);
+}
+
+// Build the small ⓘ guidance button next to section headings.
+function makeGuidanceBtn(title, body) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'guidance-btn';
+  b.title = 'Show guidance for ' + title;
+  b.setAttribute('aria-label', 'Show guidance for ' + title);
+  b.innerHTML = '<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v3.5M8 5.2v.05" stroke-linecap="round"/></svg>';
+  b.onclick = () => openGuidanceModal(title, body);
+  return b;
+}
+
+// =============================================================
+// GUIDANCE — light markdown renderer (used both inline and in modal)
+// =============================================================
+function guidanceInline(text) {
+  text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Bold must run before italic, otherwise the italic regex would
+  // swallow the inner span of any **bold** markers.
+  text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  return text;
+}
+function renderGuidanceMd(raw) {
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  const out = []; const bullets = [];
+  const flushBullets = () => {
+    if (!bullets.length) return;
+    out.push('<ul>' + bullets.map(b => '<li>' + guidanceInline(b) + '</li>').join('') + '</ul>');
+    bullets.length = 0;
+  };
+  lines.forEach(line => {
+    if (line.startsWith('- ')) { bullets.push(line.slice(2)); }
+    else { flushBullets(); out.push('<p>' + guidanceInline(line) + '</p>'); }
+  });
+  flushBullets();
+  return out.join('');
+}
+function openGuidanceModal(title, body) {
+  const dlg = $('guidance-modal');
+  $('guidance-modal-title').textContent = title;
+  $('guidance-modal-body').innerHTML = renderGuidanceMd(body);
+  if (dlg && !dlg.open) dlg.showModal();
+}
+function closeGuidanceModal() {
+  const dlg = $('guidance-modal');
+  if (dlg && dlg.open) dlg.close();
+}
+
+// Position the question arrow at the first incomplete question.
+function updateQuestionArrow() {
+  const arrow = $('q-arrow');
+  if (!arrow) return;
+  const active = document.querySelector('.q-block.is-active:not(.is-hidden)');
+  if (!active) {
+    arrow.classList.remove('is-positioned');
+    return;
+  }
+  const top = active.offsetTop + active.offsetHeight / 2;
+  arrow.style.top = top + 'px';
+  arrow.classList.add('is-positioned');
+}
+
+// Copy ALL form answers from another study into the active study.
+async function copyAnswersFromStudy(srcKey, srcLabel) {
+  if (!App.st[srcKey] || Object.keys(App.st[srcKey]).length === 0) {
+    await alertAsync(srcLabel + ' has no answers yet — fill in some answers there first, then come back to copy them.', { title: 'Nothing to copy' });
+    return;
+  }
+  const dstKey = App.activeSection;
+  if (dstKey === srcKey) return;
+  const hasAnswers = App.st[dstKey] && Object.keys(App.st[dstKey]).length > 0;
+  if (hasAnswers) {
+    const ok = await confirmAsync(
+      `This will replace the existing answers in ${App.cfg.sections[dstKey].label} with the answers from ${srcLabel}.\n\nAfter copying, you can still edit anything that's different.\n\nProceed?`,
+      { title: 'Replace existing answers?', okLabel: 'Replace', danger: true }
+    );
+    if (!ok) return;
+  }
+  App.st[dstKey] = JSON.parse(JSON.stringify(App.st[srcKey]));
+  const prefix = dstKey + '/';
+  Object.keys(App.componentEdits).forEach(id => { if (id.startsWith(prefix)) delete App.componentEdits[id]; });
+  Object.keys(App.componentSuppressed).forEach(id => { if (id.startsWith(prefix)) delete App.componentSuppressed[id]; });
+  saveState();
+  renderTabs();
+  renderSection();
+  tryUpdatePreview();
+}
+
+function renderQuestionList(questions, container) {
+  let vis = 0, done = 0, num = 0;
+  Object.entries(questions).forEach(([id, qDef]) => {
+    const q = { ...qDef, id };
+    const v = isVis(q, App.activeSection);
+    const d = v && isDone(q, App.activeSection);
+    if (v) { vis++; num++; if (d) done++; }
+
+    const block = document.createElement('div');
+    block.className = 'q-block' + (!v ? ' is-hidden' : (d ? ' is-done' : ' is-active'));
+
+    if (v) {
+      const inner = document.createElement('div');
+      inner.className = 'q-inner';
+
+      const lbl = document.createElement('div');
+      lbl.className = 'q-label';
+      const numEl  = document.createElement('span'); numEl.className  = 'q-num';  numEl.textContent  = num;
+      const textEl = document.createElement('span'); textEl.className = 'q-text'; textEl.textContent = q.text;
+      lbl.append(numEl, textEl);
+      inner.appendChild(lbl);
+
+      if (q.note) { const n = document.createElement('div'); n.className = 'q-note'; n.textContent = q.note; inner.appendChild(n); }
+      if (q.guidance) {
+        const g = document.createElement('div');
+        g.className = 'guidance';
+        // Use the same markdown renderer as the modal so any future
+        // YAML-side bullet lists / links render uniformly.
+        g.innerHTML = renderGuidanceMd(q.guidance);
+        inner.appendChild(g);
+      }
+
+      if      (q.type === 'radio')         inner.appendChild(mkRadio(q));
+      else if (q.type === 'url')           inner.appendChild(mkUrl(q));
+      else if (q.type === 'text')          inner.appendChild(mkText(q));
+      else if (q.type === 'textarea')      inner.appendChild(mkTextarea(q));
+      else if (q.type === 'aspects_table') inner.appendChild(mkAspects(q));
+      else if (q.type === 'checkboxes')    inner.appendChild(mkCbs(q));
+
+      block.appendChild(inner);
+    }
+    container.appendChild(block);
+  });
+  return { vis, done };
+}
+
+// =============================================================
+// QUESTION RENDERERS
+// =============================================================
+function mkRadio(question) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'radio-group';
+  question.options.forEach(opt => {
+    const label = document.createElement('label');
+    label.className = 'radio-opt' + (App.st[App.activeSection][question.id] === opt.value ? ' chosen' : '');
+    const input = document.createElement('input');
+    input.type    = 'radio';
+    input.name    = App.activeSection + '_' + question.id;
+    input.value   = opt.value;
+    input.checked = App.st[App.activeSection][question.id] === opt.value;
+    input.onchange = async () => {
+      // If this option carries a `confirm` block, ask first. We re-prompt
+      // every time the user transitions TO this value (the browser only
+      // fires onchange when the value actually changes, so a re-click of
+      // an already-selected option does nothing — by design).
+      if (opt.confirm) {
+        const ok = await confirmAsync(opt.confirm.message, {
+          title:       opt.confirm.title,
+          okLabel:     opt.confirm.ok     || 'Yes, continue',
+          cancelLabel: opt.confirm.cancel || 'Cancel',
+        });
+        if (!ok) {
+          // User declined — revert by re-rendering from existing state.
+          renderSection();
+          return;
+        }
+      }
+      App.st[App.activeSection][question.id] = opt.value;
+      clearDeps(question.id);
+      renderSection();
+    };
+    label.append(input, document.createTextNode(' ' + opt.label));
+    wrapper.appendChild(label);
+  });
+  return wrapper;
+}
+
+function mkUrl(question) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'url-wrap';
+  const row = document.createElement('div');
+  row.className = 'url-row';
+
+  const input = document.createElement('input');
+  input.type = 'url';
+  input.className = 'url-input';
+  input.placeholder = 'https://doi.org/…';
+  input.value = App.st[App.activeSection][question.id] || '';
+
+  // Open-in-new-tab — author's own eyes are the reachability check.
+  // (We can't fetch cross-origin from the browser, so we rely on this
+  // button to let the user verify the link works.)
+  const openBtn = document.createElement('a');
+  openBtn.className = 'url-open-btn';
+  openBtn.target = '_blank';
+  openBtn.rel = 'noopener';
+  openBtn.title = 'Open URL in new tab to verify it loads';
+  openBtn.innerHTML = 'Open <svg class="icon-glyph" viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h6v6"/><path d="M12 4l-7 7"/></svg>';
+
+  const statusEl = document.createElement('div');
+  statusEl.className = 'url-status';
+
+  const refresh = () => {
+    const url = input.value.trim();
+    if (!url) {
+      statusEl.textContent = '';
+      statusEl.className = 'url-status';
+      openBtn.removeAttribute('href');
+      openBtn.setAttribute('aria-disabled', 'true');
+      openBtn.onclick = (e) => e.preventDefault();
+      return;
+    }
+    if (isValidUrl(url)) {
+      // Be honest about what was checked: we verified the format, not reachability.
+      statusEl.textContent = '✓ URL format looks correct — click "Open" to verify the link actually loads';
+      statusEl.className = 'url-status ok';
+      openBtn.href = url;
+      openBtn.removeAttribute('aria-disabled');
+      openBtn.onclick = null;
+    } else {
+      statusEl.textContent = '✗ URL must start with http:// or https://';
+      statusEl.className = 'url-status err';
+      openBtn.removeAttribute('href');
+      openBtn.setAttribute('aria-disabled', 'true');
+      openBtn.onclick = (e) => e.preventDefault();
+    }
+  };
+
+  input.oninput = () => {
+    App.st[App.activeSection][question.id] = input.value;
+    if (question.validate_url !== false) refresh();
+    tryUpdatePreview();
+    renderTabs();
+  };
+
+  row.appendChild(input);
+  if (question.validate_url !== false) {
+    row.appendChild(openBtn);
+    refresh();
+  }
+  wrapper.append(row, statusEl);
+  return wrapper;
+}
+
+function mkTextarea(question) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'ta-wrap';
+  const textarea = document.createElement('textarea');
+  textarea.className = 'ta-input';
+  textarea.rows = 4;
+  textarea.placeholder = question.placeholder || 'Please provide your explanation…';
+  textarea.value = App.st[App.activeSection][question.id] || '';
+  const counter = document.createElement('div');
+  counter.className = 'ta-count';
+  const updateCounter = () => { counter.textContent = (textarea.value.length || 0) + ' characters'; };
+  textarea.oninput = () => {
+    App.st[App.activeSection][question.id] = textarea.value;
+    updateCounter();
+    tryUpdatePreview();
+    renderTabs();
+  };
+  updateCounter();
+  wrapper.append(textarea, counter);
+  return wrapper;
+}
+
+function mkText(question) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'text-wrap';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'text-input';
+  input.placeholder = question.placeholder || '';
+  input.value = App.st[App.activeSection][question.id] || '';
+  input.oninput = () => {
+    App.st[App.activeSection][question.id] = input.value;
+    tryUpdatePreview();
+    renderTabs();
+  };
+  wrapper.appendChild(input);
+  return wrapper;
+}
+
+function mkAspects(question) {
+  if (!App.st[App.activeSection][question.id]) App.st[App.activeSection][question.id] = {};
+  const wrapper = document.createElement('div');
+  wrapper.className = 'aspect-rows';
+
+  question.aspects.forEach(aspect => {
+    const row = document.createElement('div');
+    row.className = 'aspect-row';
+
+    const label = document.createElement('div');
+    label.className = 'aspect-row-label';
+    label.textContent = aspect.label;
+    row.appendChild(label);
+
+    const seg = document.createElement('div');
+    seg.className = 'aspect-seg';
+    seg.setAttribute('role', 'radiogroup');
+    seg.setAttribute('aria-label', aspect.label);
+
+    const buttons = [];
+
+    question.options.forEach((opt, optIdx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'aspect-seg-btn' + (App.st[App.activeSection][question.id][aspect.id] === opt.value ? ' is-on' : '');
+      btn.textContent = opt.label;
+      btn.setAttribute('role', 'radio');
+      btn.setAttribute('aria-checked', String(App.st[App.activeSection][question.id][aspect.id] === opt.value));
+      // ARIA radio-group convention: only the focused/checked button is in
+      // the tab order; arrow keys move between siblings within the group.
+      const isChecked = App.st[App.activeSection][question.id][aspect.id] === opt.value;
+      btn.tabIndex = (isChecked || (!Object.values(App.st[App.activeSection][question.id]).includes(opt.value) && optIdx === 0 && !App.st[App.activeSection][question.id][aspect.id]))
+        ? 0 : -1;
+      btn.onclick = async () => {
+        App.st[App.activeSection][question.id][aspect.id] = opt.value;
+        if (question.id === 'q3' && opt.value === 'not') {
+          await checkPreregContradiction(question);
+        }
+        renderSection();
+      };
+      btn.onkeydown = (e) => {
+        // Arrow-key navigation within the group
+        const idx = buttons.indexOf(btn);
+        let nextIdx = null;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextIdx = (idx + 1) % buttons.length;
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') nextIdx = (idx - 1 + buttons.length) % buttons.length;
+        else if (e.key === 'Home') nextIdx = 0;
+        else if (e.key === 'End')  nextIdx = buttons.length - 1;
+        else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); btn.click(); return; }
+        if (nextIdx !== null) {
+          e.preventDefault();
+          buttons[nextIdx].focus();
+          buttons[nextIdx].click();
+        }
+      };
+      buttons.push(btn);
+      seg.appendChild(btn);
+    });
+
+    row.appendChild(seg);
+    wrapper.appendChild(row);
+  });
+
+  return wrapper;
+}
+
+// Async warning shown when a user marks every aspect as "not preregistered"
+// while still claiming the study IS preregistered (q1=yes). Replaces the
+// old jarring window.alert() with the consistent modal.
+async function checkPreregContradiction(question) {
+  const allAspects = question.aspects || [];
+  const sectSt = App.st[App.activeSection];
+  const allNot = allAspects.length > 0 && allAspects.every(asp => sectSt.q3?.[asp.id] === 'not');
+  if (allNot && sectSt.q1 === 'yes') {
+    await alertAsync(
+      'You\'ve marked every aspect as "Not preregistered". This contradicts your earlier answer of "Yes" to "Is any aspect of the study preregistered?". Please change that answer to "No" instead.',
+      { title: 'Answers contradict each other' }
+    );
+  }
+}
+
+function mkCbs(question) {
+  if (!App.st[App.activeSection][question.id]) App.st[App.activeSection][question.id] = {};
+  const wrapper = document.createElement('div');
+  wrapper.className = 'cb-group';
+  question.options.forEach(opt => {
+    const item = document.createElement('div');
+    item.className = 'cb-item';
+    const label = document.createElement('label');
+    label.className = 'cb-opt' + (App.st[App.activeSection][question.id][opt.value]?.checked ? ' chosen' : '');
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = opt.value;
+    input.checked = !!App.st[App.activeSection][question.id][opt.value]?.checked;
+    let locInput = null;
+    if (opt.requires_location) {
+      locInput = document.createElement('input');
+      locInput.type = 'text';
+      locInput.className = 'loc-input' + (input.checked ? ' show' : '');
+      locInput.placeholder = opt.location_placeholder || 'Specify';
+      locInput.value = App.st[App.activeSection][question.id][opt.value]?.location || '';
+      locInput.oninput = () => {
+        if (!App.st[App.activeSection][question.id][opt.value]) App.st[App.activeSection][question.id][opt.value] = { checked: true };
+        App.st[App.activeSection][question.id][opt.value].location = locInput.value;
+        tryUpdatePreview();
+      };
+    }
+    input.onchange = () => {
+      if (!App.st[App.activeSection][question.id][opt.value]) App.st[App.activeSection][question.id][opt.value] = {};
+      App.st[App.activeSection][question.id][opt.value].checked = input.checked;
+      label.className = 'cb-opt' + (input.checked ? ' chosen' : '');
+      if (locInput) locInput.className = 'loc-input' + (input.checked ? ' show' : '');
+      tryUpdatePreview();
+      renderTabs();
+    };
+    label.append(input, document.createTextNode(' ' + opt.label));
+    item.appendChild(label);
+    if (locInput) item.appendChild(locInput);
+    wrapper.appendChild(item);
+  });
+  return wrapper;
+}
+
+// =============================================================
+// CLEAR DEPENDENTS (within section, across subsections too)
+// =============================================================
+function clearDeps(changedId) {
+  const qs = getAllQuestions(App.activeSection);
+  Object.entries(qs).forEach(([id, q]) => {
+    if (q.depends_on && Object.keys(q.depends_on).includes(changedId)) {
+      delete App.st[App.activeSection][id];
+      clearDeps(id);
+    }
+  });
+}
+</script>
+<script>
+// =============================================================
+// STATEMENT BUILDERS
+// =============================================================
+// Build all components (label + body pairs) produced by a section.
+// id format: `${sectionKey}/${subsectionKey}` for subsectioned sections,
+// or just sectionKey for flat sections. id is stable across renders,
+// used to track manual edits per component.
+function buildSectionComponents(sectKey) {
+  const sect = App.cfg.sections[sectKey];
+  const sectState = App.st[sectKey] || {};
+  const out = [];
+
+  if (sect.subsections) {
+    Object.entries(sect.subsections).forEach(([subKey, sub]) => {
+      let body;
+      if (sub.builder?.type === 'custom_preregistration') {
+        const r = buildPreregistration(sectState, sub.questions || {});
+        body = r?.body;
+      } else {
+        body = applyBuilder(sub.builder, sectState, sub.questions || {});
+      }
+      // If the builder didn't produce a body but the user has touched at
+      // least one question in this subsection, show the stem with a generic
+      // placeholder so the section's place in the statement is visible.
+      if (!body && sub.builder?.type !== 'static_text' && hasAnyAnswer(sectState, sub.questions || {})) {
+        body = subsectionPlaceholder(sub);
+      }
+      if (body) out.push({
+        id: sectKey + '/' + subKey,
+        label: (sub.statement_label || '') + ':',
+        body,
+      });
+    });
+    return out;
+  }
+
+  // Flat fallback
+  const builder = sect.builder || {};
+  let body;
+  if (builder.type === 'custom_preregistration') {
+    const r = buildPreregistration(sectState, sect.questions || {});
+    body = r?.body;
+  } else {
+    body = applyBuilder(builder, sectState, sect.questions || {});
+  }
+  if (!body && hasAnyAnswer(sectState, sect.questions || {})) {
+    body = subsectionPlaceholder(sect);
+  }
+  if (body) out.push({
+    id: sectKey,
+    label: (sect.statement_label || '') + ':',
+    body,
+  });
+  return out;
+}
+
+function hasAnyAnswer(sectState, questions) {
+  return Object.keys(questions || {}).some(qid => {
+    const v = sectState[qid];
+    if (v === undefined || v === null || v === '') return false;
+    if (typeof v === 'string') return v.trim() !== '';
+    if (Array.isArray(v)) return v.length > 0;
+    if (typeof v === 'object') return Object.values(v).some(x => x !== undefined && x !== null && x !== '');
+    return true;
+  });
+}
+
+function subsectionPlaceholder(sub) {
+  const label = (sub.statement_label || '').toLowerCase();
+  if (!label) return '[authors to provide details]';
+  return `[authors to provide ${label} details]`;
+}
+
+// Apply any builder type that takes (builder, state) and returns a body string.
+function applyBuilder(builder, sectState, questions) {
+  questions = questions || {};
+  if (!builder) return null;
+
+  if (builder.type === 'static_text') return builder.text || null;
+
+  if (builder.type === 'branch') {
+    const branchVal = sectState[builder.branch_on];
+    if (!branchVal) return null;
+    const tpl = builder.templates?.[branchVal];
+    return tpl ? applyTemplate(tpl, sectState, questions) : null;
+  }
+
+  if (builder.type === 'conditional') {
+    for (const rule of (builder.rules || [])) {
+      const whenMatches = Object.entries(rule.when || {}).every(
+        ([qid, expected]) => sectState[qid] === expected
+      );
+      if (!whenMatches) continue;
+      const requiresMet = (rule.requires || []).every(qid => {
+        const v = sectState[qid];
+        if (v === undefined || v === null) return false;
+        if (typeof v === 'string') return v.trim() !== '';
+        return true;
+      });
+      if (!requiresMet) continue;
+      return applyTemplate(rule.template || '', sectState, questions);
+    }
+    return null;
+  }
+
+  return null;
+}
+
+// Substitute {qid} placeholders with state values.
+//
+// Optional fields wrapped in parens — e.g. "from {eth3} ({eth4})." —
+// have the surrounding " ({field})" collapsed to nothing when blank.
+// This rule applies to ANY question marked `optional: true`, so the
+// special-case for `eth4` is no longer hardcoded here.
+function applyTemplate(tpl, sectState, questions) {
+  questions = questions || {};
+
+  // Collapse a parenthesised wrapper containing {optionalField} → ""
+  // when the optional field is blank. Matches both " ({eth4})" and
+  // " (ID: {eth4})" — i.e., any " ( … {qid} … )" group.
+  Object.keys(questions).forEach(qid => {
+    if (!questions[qid]?.optional) return;
+    const v = sectState[qid];
+    const isBlank = (v === undefined || v === null || (typeof v === 'string' && !v.trim()));
+    if (isBlank) {
+      const re = new RegExp(' \\([^)]*\\{' + qid + '\\}[^)]*\\)', 'g');
+      tpl = tpl.replace(re, '');
+    }
+  });
+
+  return tpl.replace(/\{(\w+)\}/g, (_m, qid) => {
+    let v = sectState[qid];
+    const q = questions[qid];
+
+    // Prefer the friendly placeholder when the field is empty.
+    if (v === undefined || v === null) return placeholderText(q);
+    if (typeof v === 'string') {
+      v = v.trim();
+      if (!v) return placeholderText(q);
+      // Sentence-fragment fields (e.g. eth6 in
+      // "This research did not require ethics approval because {eth6}.")
+      // need to embed cleanly: lowercase the leading letter and strip a
+      // trailing period so we don't end up with double-period or
+      // mid-sentence capitals.
+      if (q?.sentence_fragment) v = formatSentenceFragment(v);
+      return v;
+    }
+    return placeholderText(q);
+  });
+}
+
+// Lowercase the first letter and strip any trailing period.
+// Leaves acronyms (all-caps starting word) alone.
+function formatSentenceFragment(text) {
+  let out = text.replace(/\.\s*$/, '');                    // trailing period
+  // Only lowercase the first character if the next character isn't also
+  // uppercase — that would suggest an acronym we shouldn't touch.
+  if (out.length >= 1 && /[A-Z]/.test(out[0]) && (out.length < 2 || !/[A-Z]/.test(out[1]))) {
+    out = out[0].toLowerCase() + out.slice(1);
+  }
+  return out;
+}
+
+// =============================================================
+// PREVIEW (combined, all sections, grouped by heading)
+// =============================================================
+function updatePreview() {
+  const el = $('stmt-body');
+
+  const groups = [];
+  Object.entries(App.cfg.sections).forEach(([key, sect]) => {
+    const components = buildSectionComponents(key);
+    groups.push({ heading: sectionHeading(sect), components, key });
+  });
+
+  groups.forEach(g => g.components.forEach(c => { App.componentLastAutoText[c.id] = c.body; }));
+
+  const html = groups.map(g => {
+    let inner;
+    if (g.components.length === 0) {
+      inner = `<p class="sect-ph">Answer the questions in the <em>${esc(g.heading)}</em> section of the statement builder to complete this section.</p>`;
+    } else {
+      inner = g.components.map(c => {
+        const hasEdit         = Object.prototype.hasOwnProperty.call(App.componentEdits, c.id);
+        const display         = hasEdit ? App.componentEdits[c.id] : c.body;
+        // Highlight components that still contain placeholder brackets so
+        // the user notices unresolved fields before copying.
+        const hasPlaceholder  = !hasEdit && /\[authors? to /i.test(display);
+        const classes = ['component'];
+        if (hasEdit) classes.push('has-edit');
+        if (hasPlaceholder) classes.push('has-placeholder');
+        return `<div class="${classes.join(' ')}" data-cid="${esc(c.id)}">`
+             +   `<strong class="stmt-lbl">${esc(c.label)} </strong>`
+             +   `<span class="cbody" contenteditable="true" spellcheck="true">${esc(display)}</span>`
+             +   `<button class="creset" type="button" title="Reset this component to your form answers" aria-label="Reset this component"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.8 8a5.2 5.2 0 1 0 1.6-3.75L2.5 5.7"/><path d="M2.4 2.4v3.4h3.4"/></svg></button>`
+             + `</div>`;
+      }).join('');
+    }
+    return `<div class="stmt-section"><div class="stmt-section-h">${esc(g.heading)}</div>${inner}</div>`;
+  }).join('');
+
+  el.innerHTML = html;
+
+  el.querySelectorAll('.cbody').forEach(span => {
+    span.addEventListener('input', onComponentInput);
+  });
+  el.querySelectorAll('.creset').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const div = e.currentTarget.closest('.component');
+      if (div) resetComponent(div.dataset.cid);
+    });
+  });
+
+  updateGlobalEditBadge();
+}
+
+// "General Disclosures" → "General disclosures"; "Study 1" → "Study 1 disclosures"
+function sectionHeading(sect) {
+  if (sect.isStudy) return sect.label + ' disclosures';
+  return sect.label.charAt(0).toUpperCase() + sect.label.slice(1).toLowerCase();
+}
+
+// Build clean plain-text version for copy. Honors per-component manual edits.
+function buildPlainTextStatement() {
+  const lines = ['Research Transparency Statement', ''];
+  Object.entries(App.cfg.sections).forEach(([key, sect]) => {
+    const components = buildSectionComponents(key);
+    if (components.length === 0) return;
+    const body = components.map(c => {
+      const text = Object.prototype.hasOwnProperty.call(App.componentEdits, c.id)
+        ? App.componentEdits[c.id]
+        : c.body;
+      // Strip any leading whitespace on the body before joining so we
+      // can guarantee exactly one space between the label colon and the
+      // first non-whitespace character.
+      return `${c.label} ${(text || '').replace(/^\s+/, '')}`;
+    }).join(' ');
+    lines.push(sectionHeading(sect));
+    lines.push(body);
+    lines.push('');
+  });
+  while (lines.length && lines[lines.length - 1] === '') lines.pop();
+  return lines.join('\n');
+}
+
+// HTML version used for clipboard so bold survives a paste into Word.
+function buildHtmlStatement() {
+  const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const parts = ['<p><strong>Research Transparency Statement</strong></p>'];
+  Object.entries(App.cfg.sections).forEach(([key, sect]) => {
+    const components = buildSectionComponents(key);
+    if (components.length === 0) return;
+    const heading = sectionHeading(sect);
+    parts.push(`<p><strong>${escHtml(heading)}</strong></p>`);
+    const body = components.map(c => {
+      const text = Object.prototype.hasOwnProperty.call(App.componentEdits, c.id)
+        ? App.componentEdits[c.id]
+        : c.body;
+      // Put the space INSIDE the bold tag (e.g. "<strong>Funding: </strong>")
+      // so it survives any paste handler that normalises whitespace at
+      // tag boundaries. Then strip leading whitespace from the body so we
+      // never end up with double-space.
+      const cleanText = (text || '').replace(/^\s+/, '');
+      return `<strong>${escHtml(c.label)} </strong>${linkifyHtml(escHtml(cleanText))}`;
+    }).join(' ');
+    parts.push(`<p>${body}</p>`);
+  });
+  return parts.join('\n');
+}
+
+// Wrap http(s) URLs found in already-HTML-escaped text in <a> tags.
+// We trim trailing sentence punctuation so a URL ending a sentence
+// (e.g. "...available (https://example.com).") doesn't include the
+// closing paren or period in the link.
+function linkifyHtml(escapedText) {
+  return escapedText.replace(/https?:\/\/[^\s)<]+/g, (url) => {
+    const trailing = url.match(/[.,;:!?]+$/);
+    let suffix = '';
+    if (trailing) {
+      suffix = trailing[0];
+      url = url.slice(0, -suffix.length);
+    }
+    // The URL is already HTML-escaped (e.g. '&' has become '&amp;');
+    // that's the correct form for both the href attribute and the link text.
+    return `<a href="${url}">${url}</a>${suffix}`;
+  });
+}
+
+// =============================================================
+// RESET STATEMENT (discard ALL manual edits, rebuild from answers)
+// =============================================================
+async function resetStmt() {
+  const ok = await confirmAsync(
+    'Discard all manual edits and rebuild the statement from your answers?',
+    { title: 'Discard manual edits?', okLabel: 'Discard edits', danger: true }
+  );
+  if (!ok) return;
+  App.componentEdits      = {};
+  App.componentSuppressed = {};
+  updatePreview();
+}
+
+// =============================================================
+// COPY (with execCommand fallback for file:// origins)
+// =============================================================
+async function copyStmt() {
+  const btn = $('copy-btn');
+  // The Copy button is always clickable. If the statement still has
+  // unanswered sections, ask for confirmation first.
+  if (!isStatementComplete()) {
+    const incomplete = [];
+    Object.entries(App.cfg.sections).forEach(([key, sect]) => {
+      const stats = sectionStats(key);
+      if (stats.vis > 0 && stats.done < stats.vis) {
+        incomplete.push({
+          label: sect.isStudy ? sect.label + ' disclosures' : sect.label,
+          done: stats.done,
+          vis: stats.vis,
+        });
+      }
+    });
+    const list = incomplete.map(s => `  • ${s.label}  (${s.done} of ${s.vis} answered)`).join('\n');
+    const proceed = await confirmAsync(
+      `Some sections are not complete:\n\n${list}\n\nThe statement will include placeholder text such as "[authors to provide details]" wherever an answer is missing.\n\nCopy anyway?`,
+      { title: 'Statement is incomplete', okLabel: 'Copy incomplete statement', danger: true }
+    );
+    if (!proceed) return;
+  }
+
+  const text = buildPlainTextStatement();
+  if (!text) return;
+
+  const flashCopied = () => {
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy statement'; btn.classList.remove('copied'); }, 2500);
+  };
+  const flashFailed = () => {
+    btn.textContent = '⚠ Copy failed — select & copy manually';
+    btn.style.background = 'var(--red)';
+    setTimeout(() => { btn.textContent = 'Copy statement'; btn.style.background = ''; }, 3500);
+  };
+
+  // 1a) Modern Clipboard API with rich HTML
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      const html = buildHtmlStatement();
+      const item = new ClipboardItem({
+        'text/html':  new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([text], { type: 'text/plain' }),
+      });
+      await navigator.clipboard.write([item]);
+      flashCopied();
+      return;
+    }
+  } catch (e) { /* fall through */ }
+
+  // 1b) Plain-text fallback
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      flashCopied();
+      return;
+    }
+  } catch (e) { /* fall through */ }
+
+  // 2) execCommand fallback for file:// origins
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '0';
+    ta.style.left = '0';
+    ta.style.width = '1px';
+    ta.style.height = '1px';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (ok) flashCopied(); else flashFailed();
+  } catch (e) {
+    flashFailed();
+  }
+}
+</script>
+</body>
+</html>
