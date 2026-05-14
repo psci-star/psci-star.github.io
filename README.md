@@ -1,18 +1,25 @@
 # Research Transparency Statement tools
 
-Two companion web apps for the Research Transparency Statement (RTS) required in
-*Psychological Science* manuscripts:
+## What? 
+
+This repository contains two companion web apps for the Research Transparency Statement (RTS) required in *Psychological Science* manuscripts:
 
 - **RTS Builder** — for authors. Answers about the research are turned into a
   policy-aligned RTS to paste into a manuscript.
 - **RTS Validator** — for the editorial team. A pasted RTS is checked, section by
   section, against the journal's policy and standard wording.
 
-Both are static HTML — no build step, no server-side code.
+Both apps are static HTML — there is no server-side code or database.
+
+## Who?
+
+The apps were built by Tom Hardwicke (Senior Editor for Statistics, Transparency, and Rigour at Psychological Science) with considerable assistance from Claude Opus 4.7.
+
+Questions/feedback can be sent to psych.star.team@gmail.com
 
 ## Live URLs
 
-Hosted on GitHub Pages under the `psci-star` organisation:
+The apps are hosted on GitHub Pages under the `psci-star` organisation:
 
 - Builder — <https://psci-star.github.io/builder/>
 - Validator — <https://psci-star.github.io/validator/>
@@ -29,8 +36,6 @@ psci-star.github.io/
 │   └── index.html        RTS Validator          → /validator/
 ├── rts-config.js         Shared policy + wording (single source of truth)
 ├── rts-utils.js          Shared helpers (DOM, modals, sentence builders)
-├── rts-builder.html      Redirect → /builder/   (legacy path)
-├── rts-validator.html    Redirect → /validator/ (legacy path)
 ├── tests/
 │   └── rts-tests.js      Test suite (node --test style, no dependencies)
 ├── .nojekyll             Tells GitHub Pages to serve files as-is
@@ -38,42 +43,14 @@ psci-star.github.io/
 ```
 
 `rts-config.js` and `rts-utils.js` live at the repository root and are loaded by
-both apps via `../rts-config.js` / `../rts-utils.js`. Keeping them in one place
-is deliberate — it is the single source of truth, so the Builder and the
-Validator can never drift apart.
+both apps via `../rts-config.js` / `../rts-utils.js`.
 
-## Deploying to GitHub Pages
+## Local preview
 
-1. Create a repository named **`psci-star.github.io`** in the **`psci-star`**
-   organisation.
-2. Push the contents of this folder to the default branch (`main`).
-3. In the repository: **Settings → Pages → Build and deployment**.
-   Set **Source** to *Deploy from a branch*, **Branch** to `main`, folder `/ (root)`.
-4. Within a minute the site is live at <https://psci-star.github.io/>, with the
-   apps at `/builder/` and `/validator/`.
-
-No custom domain or GitHub Actions workflow is needed — this is a plain static
-site and `.nojekyll` keeps GitHub Pages from doing any processing.
-
-## Analytics (GoatCounter)
-
-Both apps — and the landing page — include a [GoatCounter](https://www.goatcounter.com/)
-snippet. GoatCounter is free for non-commercial use, GDPR-compliant (no cookies,
-no PII, IP addresses hashed and discarded after 8 hours), and privacy-friendly.
-
-The snippet is wired to the site code **`psci-star`**. To start collecting data:
-
-1. Sign up at <https://www.goatcounter.com/signup>.
-2. Set the site code to **`psci-star`** so the endpoint
-   `https://psci-star.goatcounter.com/count` resolves.
-   - If `psci-star` is already taken, pick another code and update the
-     `data-goatcounter` URL in **`builder/index.html`**, **`validator/index.html`**,
-     and **`index.html`** to match.
-
-GoatCounter records the page path automatically, so the Builder (`/builder/`),
-the Validator (`/validator/`), and the landing page (`/`) appear as separate
-entries in one dashboard. Until the code is registered the snippet is harmless —
-the request simply 404s and nothing is tracked.
+The apps work when opened directly from disk (`file://`) — just open
+`builder/index.html` or `validator/index.html` in a browser. They do depend on
+two CDN scripts (the Inter font and `js-yaml`), so an internet connection is
+needed on first load.
 
 ## Editing the wording
 
@@ -96,9 +73,8 @@ It checks the builder's generated wording against snapshots and round-trips
 every builder output through the validator's policy checks, so the two apps
 cannot silently diverge.
 
-## Local preview
+## Analytics (GoatCounter)
 
-The apps work when opened directly from disk (`file://`) — just open
-`builder/index.html` or `validator/index.html` in a browser. They do depend on
-two CDN scripts (the Inter font and `js-yaml`), so an internet connection is
-needed on first load.
+Both apps — and the landing page — include a [GoatCounter](https://www.goatcounter.com/)
+snippet. GoatCounter is free for non-commercial use, GDPR-compliant (no cookies,
+no PII, IP addresses hashed and discarded after 8 hours), and privacy-friendly.
