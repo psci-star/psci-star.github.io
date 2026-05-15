@@ -227,9 +227,12 @@ body {
 .nav-panel .arrow-row      { padding-top: .4rem; }
 
 /* ---- App layout ---- */
+/* Two columns: the question/builder panel on the left and the preview
+   panel on the right. The preview is given a bit more room than the
+   builder panel (1 : 1.25) so the finished statement is easy to read. */
 .app {
   display: grid;
-  grid-template-columns: 1fr 720px;
+  grid-template-columns: 1fr 1.25fr;
   gap: 1.25rem;
   padding: 1.25rem;
   background: var(--white);
@@ -262,7 +265,7 @@ body {
   border-radius: 8px;
   overflow: hidden;
   min-height: 0;
-  box-shadow: 0 1px 2px rgba(60, 80, 110, .04), 0 4px 16px rgba(60, 80, 110, .05);
+  box-shadow: 0 1px 3px rgba(60, 80, 110, .08), 0 8px 28px rgba(60, 80, 110, .10);
 }
 .q-panel-body {
   flex: 1;
@@ -452,7 +455,7 @@ body {
   overflow: hidden;
   transition: background .2s;
   min-height: 0;
-  box-shadow: 0 1px 2px rgba(60, 80, 110, .04), 0 4px 16px rgba(60, 80, 110, .05);
+  box-shadow: 0 1px 3px rgba(60, 80, 110, .08), 0 8px 28px rgba(60, 80, 110, .10);
 }
 .p-panel-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
 .p-gap        { height: 1.5rem; flex-shrink: 0; background: var(--white); position: sticky; top: 0; }
@@ -697,27 +700,6 @@ body {
   line-height: 1.5;
 }
 
-/* Edit-hint banner above the statement */
-.edit-hint {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
-  padding: .55rem .85rem;
-  margin: 0 1.5rem 1rem;
-  background: var(--blue-bg);
-  border: 1px solid var(--blue);
-  border-radius: 4px;
-  color: var(--blue-hover);
-  font-size: 13px;
-  line-height: 1.45;
-}
-.edit-hint .edit-hint-icon { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; color: var(--blue); }
-.edit-hint .edit-hint-text { flex: 1; }
-.edit-hint .edit-hint-text strong { color: var(--blue-hover); font-weight: 600; }
-.edit-hint .edit-hint-x    { flex-shrink: 0; background: none; border: none; color: var(--blue); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 .25rem; border-radius: 3px; font-weight: 400; }
-.edit-hint .edit-hint-x:hover { background: var(--blue); color: var(--white); }
-.edit-hint.is-hidden       { display: none; }
-
 /* RR banner — shown on stage when RR mode is on */
 .rr-banner {
   display: none;
@@ -926,16 +908,6 @@ body {
     </div>
     <div class="p-panel-body">
       <div class="p-gap"></div>
-      <div class="edit-hint" id="edit-hint">
-        <span class="edit-hint-icon" aria-hidden="true">
-          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 2.5L13.5 5 5 13.5H2.5V11L11 2.5z"/>
-            <path d="M9.5 4l2.5 2.5"/>
-          </svg>
-        </span>
-        <span class="edit-hint-text"><strong>Tip:</strong> click any line in the statement below to edit it directly. The journal's standard wording will return as soon as you reset.</span>
-        <button class="edit-hint-x" type="button" onclick="dismissEditHint()" aria-label="Dismiss tip">×</button>
-      </div>
       <div class="p-top">
         <div class="stmt-box">
           <div class="stmt-bar" aria-hidden="true"></div>
@@ -959,7 +931,7 @@ body {
 </div>
 
 <footer class="app-footer" aria-label="App version">
-  <span class="version-label">v3.1</span>
+  <span class="version-label">v0.9</span>
 </footer>
 
 <dialog id="help-modal" class="modal" aria-labelledby="modal-title">
@@ -981,6 +953,7 @@ body {
       </ol>
       <p style="margin-top:1.1rem;font-size:14px;font-weight:600;color:var(--black)">Notes</p>
       <ul style="margin:.4rem 0 0 1.15rem;padding:0;display:flex;flex-direction:column;gap:.5rem">
+        <li style="font-family:'Inter',sans-serif;font-size:14px;line-height:1.55;color:var(--g4)">The app is not designed for use on a mobile phone, only laptop/desktop.</li>
         <li style="font-family:'Inter',sans-serif;font-size:14px;line-height:1.55;color:var(--g4)">A green "saved" indicator in the upper right of the app indicates that your work is being auto-saved to this browser — you can come back later and your draft will still be here. If the indicator is amber, drafts are <em>not</em> being saved due to a technical problem.</li>
         <li style="font-family:'Inter',sans-serif;font-size:14px;line-height:1.55;color:var(--g4)">If you are preparing a Stage 1 Registered Report, toggle the switch in the upper right of the app.</li>
       </ul>
@@ -1012,7 +985,7 @@ body {
 
 <script>
 // =============================================================
-// RTS Builder — v3.1
+// RTS Builder — v0.9
 //
 // Loads policy from rts-config.js and helpers from rts-utils.js.
 // All policy wording lives in rts-config.js so the Validator and
@@ -1022,8 +995,7 @@ body {
 //   openHelpModal, closeHelpModal,
 //   openGuidanceModal (via makeGuidanceBtn), closeGuidanceModal,
 //   toggleRR, toggleRRFromBanner,
-//   resetAll, resetStmt,
-//   dismissEditHint, copyStmt
+//   resetAll, resetStmt, copyStmt
 // =============================================================
 
 const {
@@ -1037,7 +1009,6 @@ const {
 // =============================================================
 const STORAGE_KEY    = 'rts-builder-state-v1';
 const HELP_SHOWN_KEY = 'rts-builder-help-shown-v1';
-const EDIT_HINT_KEY  = 'rts-builder-edit-hint-dismissed-v1';
 
 const DEFAULT_MAX_STUDIES = 5;
 
@@ -1146,7 +1117,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   load(globalThis.RTS_CONFIG_YAML);
   if (restoredTs) flashRestored(restoredTs);
-  maybeShowEditHint();
   maybeShowStorageWarning();
 
   // Welcome modal on first visit.
@@ -1362,18 +1332,6 @@ function toggleRRFromBanner() {
   const inp = $('rr-toggle-input');
   if (inp) inp.checked = false;
   toggleRR(false);
-}
-
-// =============================================================
-// EDIT HINT
-// =============================================================
-function dismissEditHint() {
-  $('edit-hint')?.classList.add('is-hidden');
-  safeStorage.set(EDIT_HINT_KEY, '1');
-}
-function maybeShowEditHint() {
-  const dismissed = safeStorage.get(EDIT_HINT_KEY) === '1';
-  if (dismissed) $('edit-hint')?.classList.add('is-hidden');
 }
 
 // =============================================================
