@@ -731,11 +731,10 @@ test('repo: GoatCounter is wired to the psci-star site code in both apps', () =>
   ok(v.includes('data-goatcounter="https://psci-star.goatcounter.com/count"'), 'validator wired to psci-star');
   ok(!b.includes('YOURSITE') && !v.includes('YOURSITE'), 'no leftover YOURSITE placeholder');
 });
-test('repo: root rts-builder.html / rts-validator.html are redirect stubs', () => {
-  const b = fs.readFileSync(path.join(ROOT, 'rts-builder.html'), 'utf8');
-  const v = fs.readFileSync(path.join(ROOT, 'rts-validator.html'), 'utf8');
-  ok(/http-equiv="refresh"[^>]*url=\.\/builder\//.test(b),   'rts-builder.html redirects to ./builder/');
-  ok(/http-equiv="refresh"[^>]*url=\.\/validator\//.test(v), 'rts-validator.html redirects to ./validator/');
+test('repo: landing page links to both apps', () => {
+  const land = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  ok(land.includes('href="./builder/"'),   'landing page links to ./builder/');
+  ok(land.includes('href="./validator/"'), 'landing page links to ./validator/');
 });
 
 // ---- Storage migration smoke test ----
