@@ -309,7 +309,7 @@ body {
   <div class="results-panel">
     <div class="results-top">
       <div class="p-eye">Validation Results</div>
-      <div id="summary" class="summary summary-empty">Awaiting input — paste an RTS and click <strong>Validate</strong>, or click <em>Load example</em> in the header to see how it works.</div>
+      <div id="summary" class="summary summary-empty">Awaiting input — paste an RTS in the left-hand panel or click <em>Load example</em> in the header to see how it works.</div>
       <div id="results"></div>
     </div>
   </div>
@@ -986,7 +986,7 @@ function orderResults(results, studyIndices) {
 // =============================================================
 function renderEmpty(msg) {
   $('summary').className = 'summary summary-empty';
-  $('summary').textContent = msg || 'Awaiting input — paste an RTS and click Validate.';
+  $('summary').textContent = msg || 'Awaiting input — paste an RTS in the left-hand panel or click <em>Load example</em> in the header to see how it works.';
   $('results').innerHTML = '';
 }
 
