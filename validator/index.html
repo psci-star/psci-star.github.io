@@ -60,16 +60,24 @@ body {
   letter-spacing: -.005em;
   display: flex;
   flex-direction: column;
+  /* Small gap above the header — see builder/index.html. */
+  padding-top: .75rem;
 }
 
-/* ---- Header ---- */
+/* ---- Header ----
+   Header lays out as flex with wrap enabled, so when the title plus
+   right-side controls (Help, Load example, Reset all) can't fit on
+   one row, the controls drop to a second row instead of overflowing
+   the header border. min-height (rather than a fixed height) lets
+   the header grow naturally with its content. */
 .header {
-  height: 54px;
+  min-height: 54px;
   background: var(--white);
-  border-bottom: 1px solid var(--g2);
   display: flex;
   align-items: center;
-  padding: 0 2rem;
+  flex-wrap: wrap;
+  row-gap: .5rem;
+  padding: .35rem 2rem;
   justify-content: space-between;
   position: sticky;
   top: 0;
@@ -78,7 +86,33 @@ body {
 .hw          { font-family: 'Inter', sans-serif; font-size: 15.5px; font-weight: 500; letter-spacing: -.01em; color: var(--black); }
 .hw-journal  { color: var(--blue); font-weight: 600; }
 .hw-sep      { color: var(--g3); font-weight: 400; margin: 0 .15rem; }
-.hdr-right   { display: flex; align-items: center; gap: .6rem; }
+.hw-short    { display: none; }
+/* See builder/index.html for the design rationale. */
+.hdr-right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem .6rem;
+}
+
+/* Force the title onto its own row at tablet-landscape widths and
+   below — see builder/index.html for rationale. */
+@media (max-width: 1024px) {
+  .hw { flex-basis: 100%; }
+}
+
+@media (max-width: 640px) {
+  .header {
+    min-height: 48px;
+    padding: .4rem 1rem;
+    position: static;
+  }
+  .hw           { font-size: 14px; }
+  .hw-full      { display: none; }
+  .hw-short     { display: inline; }
+  .btn-help,
+  .btn-reset    { font-size: 12px; padding: .35rem .65rem; }
+}
 
 .btn-reset, .btn-help {
   font-family: 'Inter', sans-serif;
@@ -242,6 +276,15 @@ body {
   box-shadow: 0 20px 60px rgba(0, 0, 0, .18);
   color: var(--black);
   overflow: hidden;
+  /* Pin horizontally centered with a fixed offset from the top.
+     Browser default for <dialog> is inset:0; margin:auto, which
+     vertically centers the dialog and can drift on tall content;
+     we want a consistent top anchor instead. */
+  position: fixed;
+  top: 6vh;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
 }
 .modal::backdrop  { background: rgba(20, 18, 15, .45); backdrop-filter: blur(2px); }
 .modal[open]      { animation: slideUp .25s ease; display: flex; flex-direction: column; }
@@ -275,7 +318,10 @@ body {
 .modal-x:hover    { background: var(--g1); color: var(--black); }
 
 @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
 
 /* ---- Footer ---- */
 .app-footer    { padding: .45rem 2rem; background: var(--white); border-top: 1px solid var(--g2); display: flex; align-items: center; justify-content: flex-end; min-height: 28px; }
@@ -285,7 +331,12 @@ body {
 <body>
 
 <header class="header">
-  <span class="hw"><span class="hw-journal">Psychological Science</span> <span class="hw-sep">|</span> Research Transparency Statement validator</span>
+  <span class="hw">
+    <span class="hw-journal">Psychological Science</span>
+    <span class="hw-sep">|</span>
+    <span class="hw-full">Research Transparency Statement validator</span>
+    <span class="hw-short">RTS Validator</span>
+  </span>
   <div class="hdr-right">
     <button class="btn-help"  onclick="openHelpModal()" title="How this app works">? Help</button>
     <button class="btn-reset" onclick="loadExample()" title="Load a sample RTS that contains real issues">↺ Load example</button>
