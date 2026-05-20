@@ -59,16 +59,26 @@ body {
   letter-spacing: -.005em;
   display: flex;
   flex-direction: column;
+  /* Small gap above the header so it floats below the viewport top
+     rather than sitting flush against it. The page background shows
+     through this padding. */
+  padding-top: .75rem;
 }
 
-/* ---- Header ---- */
+/* ---- Header ----
+   Header lays out as flex with wrap enabled, so when the title plus
+   right-side controls (save indicator, RR toggle, Help, Reset all)
+   can't fit on one row, the controls drop to a second row instead of
+   overflowing the header border. min-height (rather than a fixed
+   height) lets the header grow naturally with its content. */
 .header {
-  height: 54px;
+  min-height: 54px;
   background: var(--white);
-  border-bottom: 1px solid var(--g2);
   display: flex;
   align-items: center;
-  padding: 0 2rem;
+  flex-wrap: wrap;
+  row-gap: .5rem;
+  padding: .35rem 2rem;
   justify-content: space-between;
   position: sticky;
   top: 0;
@@ -77,6 +87,10 @@ body {
 .hw           { font-family: 'Inter', sans-serif; font-size: 15.5px; font-weight: 500; letter-spacing: -.01em; color: var(--black); }
 .hw-journal   { color: var(--blue); font-weight: 600; }
 .hw-sep       { color: var(--g3); font-weight: 400; margin: 0 .15rem; }
+/* Default: show the full title; the short form is swapped in below the
+   narrow-screen breakpoint. Keeping both in the DOM means the swap is
+   pure CSS and survives no-JS / reduced-motion environments. */
+.hw-short     { display: none; }
 .icon-glyph   { flex-shrink: 0; display: inline-block; vertical-align: -2px; margin-right: .35rem; }
 .btn-reset .icon-glyph,
 .btn-help  .icon-glyph,
@@ -99,7 +113,46 @@ body {
 /* Reset is destructive — hint with a red border on hover. */
 .btn-reset:hover { border-color: var(--red); color: var(--red); }
 
-.hdr-right { display: flex; align-items: center; gap: .85rem; }
+/* On one-row layouts the parent's justify-content: space-between
+   pushes the controls to the right edge alongside the title. When
+   the header wraps, the controls land on their own row and sit at
+   the left (their natural start position) — no margin-left: auto,
+   so they don't get pushed to the right of an otherwise empty row.
+   flex-wrap on the controls themselves means a long set of buttons
+   can also break across rows on very narrow screens. */
+.hdr-right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem .85rem;
+}
+
+/* Even when the title plus right-side controls would technically fit
+   on one row, this breakpoint forces the title onto its own row at
+   tablet-landscape widths and below, so the controls always drop to
+   a left-aligned second row. Without this, the natural wrap only
+   triggers around ~950-1000px where things actually overflow. */
+@media (max-width: 1024px) {
+  .hw { flex-basis: 100%; }
+}
+
+/* Narrow-viewport tweaks. Wrapping behaviour already lives on .header
+   and .hdr-right above; here we just tighten typography and padding,
+   swap the long title for "RTS Builder", and drop position:sticky so
+   the header doesn't eat scroll-time screen real estate on phones. */
+@media (max-width: 640px) {
+  .header {
+    min-height: 48px;
+    padding: .4rem 1rem;
+    position: static;
+  }
+  .hw            { font-size: 14px; }
+  .hw-full       { display: none; }
+  .hw-short      { display: inline; }
+  .btn-help,
+  .btn-reset,
+  .rr-toggle-label { font-size: 12.5px; padding: .35rem .65rem; }
+}
 
 /* Save / restore indicator */
 .save-ind {
@@ -173,7 +226,7 @@ body {
   transition: left .4s cubic-bezier(.34, 1.56, .64, 1);
   pointer-events: none;
 }
-.arrow-label   { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; color: var(--blue); line-height: 1; letter-spacing: .02em; white-space: nowrap; background: var(--white); padding: 8px 3px 0; }
+.arrow-label   { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; color: var(--blue); line-height: 1; letter-spacing: .02em; white-space: nowrap; background: var(--white); padding: 8px 3px 0; }
 .arrow-chevron { font-size: 12px; color: var(--blue); line-height: 1; animation: chevronPulse 1.6s ease-in-out infinite; }
 @keyframes chevronPulse { 0%, 100% { transform: translateY(0); opacity: 1; } 50% { transform: translateY(3px); opacity: .5; } }
 .arrow-row.all-done .arrow-indicator { display: none; }
@@ -222,7 +275,8 @@ body {
 .step-remove:hover { background: var(--red); color: var(--white); }
 
 .nav-panel-wrap            { padding: 1.25rem 1.25rem 0; background: var(--white); }
-.nav-panel                 { background: var(--white); border: 1px solid var(--g2); border-radius: 8px; overflow: hidden; }
+.nav-panel                 { background: var(--white); border: 1px solid var(--g2); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 2px rgba(60, 80, 110, .04), 0 4px 16px rgba(60, 80, 110, .05); transition: border-color .12s, box-shadow .12s, transform .12s; }
+.nav-panel:hover           { border-color: var(--blue); box-shadow: 0 2px 4px rgba(60, 80, 110, .08), 0 8px 24px rgba(60, 80, 110, .10); transform: translateY(-2px); }
 .nav-panel .panel-header   { position: relative; top: auto; }
 .nav-panel .arrow-row      { padding-top: .4rem; }
 
@@ -265,7 +319,13 @@ body {
   border-radius: 8px;
   overflow: hidden;
   min-height: 0;
-  box-shadow: 0 1px 3px rgba(60, 80, 110, .08), 0 8px 28px rgba(60, 80, 110, .10);
+  box-shadow: 0 1px 2px rgba(60, 80, 110, .04), 0 4px 16px rgba(60, 80, 110, .05);
+  transition: border-color .12s, box-shadow .12s, transform .12s;
+}
+.q-panel:hover {
+  border-color: var(--blue);
+  box-shadow: 0 2px 4px rgba(60, 80, 110, .08), 0 8px 24px rgba(60, 80, 110, .10);
+  transform: translateY(-2px);
 }
 .q-panel-body {
   flex: 1;
@@ -282,9 +342,9 @@ body {
 /* Per-pane label bar with semantic icon */
 .panel-header {
   font-family: 'Inter', sans-serif;
-  font-size: 13.5px;
+  font-size: 16px;
   font-weight: 700;
-  letter-spacing: .13em;
+  letter-spacing: .11em;
   text-transform: uppercase;
   padding: .85rem 2rem;
   background: var(--white);
@@ -453,9 +513,14 @@ body {
   border: 1px solid var(--g2);
   border-radius: 8px;
   overflow: hidden;
-  transition: background .2s;
+  transition: background .2s, border-color .12s, box-shadow .12s, transform .12s;
   min-height: 0;
-  box-shadow: 0 1px 3px rgba(60, 80, 110, .08), 0 8px 28px rgba(60, 80, 110, .10);
+  box-shadow: 0 1px 2px rgba(60, 80, 110, .04), 0 4px 16px rgba(60, 80, 110, .05);
+}
+.p-panel:hover {
+  border-color: var(--blue);
+  box-shadow: 0 2px 4px rgba(60, 80, 110, .08), 0 8px 24px rgba(60, 80, 110, .10);
+  transform: translateY(-2px);
 }
 .p-panel-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
 .p-gap        { height: 1.5rem; flex-shrink: 0; background: var(--white); position: sticky; top: 0; }
@@ -606,6 +671,15 @@ body {
   box-shadow: 0 20px 60px rgba(0, 0, 0, .18);
   color: var(--black);
   overflow: hidden;
+  /* Pin horizontally centered with a fixed offset from the top.
+     Browser default for <dialog> is inset:0; margin:auto, which
+     vertically centers the dialog and can drift on tall content;
+     we want a consistent top anchor instead. */
+  position: fixed;
+  top: 6vh;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
 }
 .modal::backdrop  { background: rgba(20, 18, 15, .45); backdrop-filter: blur(2px); }
 .modal[open]      { animation: slideUp .25s ease; display: flex; flex-direction: column; }
@@ -639,8 +713,43 @@ body {
 .modal-x         { position: absolute; top: 1rem; right: 1rem; width: 30px; height: 30px; background: none; border: none; font-family: 'Inter', sans-serif; font-size: 22px; font-weight: 300; color: var(--g3); cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0; }
 .modal-x:hover   { background: var(--g1); color: var(--black); }
 
+/* Mobile-not-supported warning banner. Sits just below the header and
+   is shown purely via the viewport-width media query below — there is
+   no JavaScript or localStorage gating, so every mobile/narrow-screen
+   visitor sees it on every visit, not just the first. Viewport width
+   is a less robust "is this mobile?" signal than user-agent or
+   (pointer: coarse) but is more honest about what actually drives the
+   bad UX — a narrow screen. */
+.mobile-warning { display: none; }
+@media (max-width: 900px) {
+  .mobile-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: .65rem;
+    padding: .85rem 1rem;
+    margin: .75rem 1rem 0;
+    background: var(--amber-bg);
+    border-left: 3px solid var(--amber);
+    border-radius: 0 4px 4px 0;
+    color: var(--black);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .mobile-warning-icon {
+    color: var(--amber);
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    margin-top: 1px;
+  }
+}
+
 @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
 
 /* RR toggle (header) */
 .rr-toggle-label {
@@ -828,7 +937,12 @@ body {
 <body>
 
 <header class="header">
-  <span class="hw"><span class="hw-journal">Psychological Science</span> <span class="hw-sep">|</span> Research Transparency Statement builder</span>
+  <span class="hw">
+    <span class="hw-journal">Psychological Science</span>
+    <span class="hw-sep">|</span>
+    <span class="hw-full">Research Transparency Statement builder</span>
+    <span class="hw-short">RTS Builder</span>
+  </span>
   <div class="hdr-right">
     <span class="save-ind" id="save-ind" role="status" aria-live="polite"
           title="Bright green dot = a save just happened. Dim green dot = your draft is saved and the autosave is idle until your next change. Amber = your browser isn't saving drafts."></span>
@@ -852,6 +966,15 @@ body {
     </button>
   </div>
 </header>
+
+<div class="mobile-warning" role="alert">
+  <svg class="mobile-warning-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/>
+    <line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+  <span>This app is not designed for mobile devices — we recommend using a laptop or desktop computer.</span>
+</div>
 
 <div class="storage-banner" id="storage-banner" role="status">
   <span><strong>Heads up:</strong> your browser isn't saving drafts (private browsing or storage disabled). Keep this tab open until you've copied your statement, or your work will be lost on refresh.</span>
@@ -953,7 +1076,6 @@ body {
       </ol>
       <p style="margin-top:1.1rem;font-size:14px;font-weight:600;color:var(--black)">Notes</p>
       <ul style="margin:.4rem 0 0 1.15rem;padding:0;display:flex;flex-direction:column;gap:.5rem">
-        <li style="font-family:'Inter',sans-serif;font-size:14px;line-height:1.55;color:var(--g4)">The app is not designed for use on a mobile phone, only laptop/desktop.</li>
         <li style="font-family:'Inter',sans-serif;font-size:14px;line-height:1.55;color:var(--g4)">A green "saved" indicator in the upper right of the app indicates that your work is being auto-saved to this browser — you can come back later and your draft will still be here. If the indicator is amber, drafts are <em>not</em> being saved due to a technical problem.</li>
         <li style="font-family:'Inter',sans-serif;font-size:14px;line-height:1.55;color:var(--g4)">If you are preparing a Stage 1 Registered Report, toggle the switch in the upper right of the app.</li>
       </ul>
@@ -2047,7 +2169,7 @@ function mkUrl(question) {
       openBtn.removeAttribute('aria-disabled');
       openBtn.onclick = null;
     } else {
-      statusEl.textContent = '✗ URL must start with http:// or https://';
+      statusEl.textContent = '✗ This doesn\'t look like a complete URL — it must start with http:// or https:// and include a full domain (e.g. osf.io)';
       statusEl.className = 'url-status err';
       openBtn.removeAttribute('href');
       openBtn.setAttribute('aria-disabled', 'true');
@@ -2470,9 +2592,19 @@ function sectionHeading(sect) {
   return sect.label.charAt(0).toUpperCase() + sect.label.slice(1).toLowerCase();
 }
 
-// Build clean plain-text version for copy. Honors per-component manual edits.
-function buildPlainTextStatement() {
-  const lines = ['Research Transparency Statement', ''];
+// Build the markdown version used for the clipboard's text/plain leg.
+// Honors per-component manual edits.
+//
+// Output is markdown — bold for the title, section headings, and
+// component labels (e.g. "**Funding:** ..."). URLs are left bare so
+// that GitHub-flavored markdown, Slack, Notion, Obsidian, and similar
+// tools auto-link them, while plain-text consumers still see a normal
+// URL rather than [url](url) noise.
+//
+// Apps that take the text/html clipboard leg (Word, Google Docs,
+// Outlook) ignore this entirely and use buildHtmlStatement() output.
+function buildMarkdownStatement() {
+  const lines = ['**Research Transparency Statement**', ''];
   Object.entries(App.cfg.sections).forEach(([key, sect]) => {
     const components = buildSectionComponents(key);
     if (components.length === 0) return;
@@ -2483,9 +2615,9 @@ function buildPlainTextStatement() {
       // Strip any leading whitespace on the body before joining so we
       // can guarantee exactly one space between the label colon and the
       // first non-whitespace character.
-      return `${c.label} ${(text || '').replace(/^\s+/, '')}`;
+      return `**${c.label}** ${(text || '').replace(/^\s+/, '')}`;
     }).join(' ');
-    lines.push(sectionHeading(sect));
+    lines.push('**' + sectionHeading(sect) + '**');
     lines.push(body);
     lines.push('');
   });
@@ -2577,7 +2709,7 @@ async function copyStmt() {
     if (!proceed) return;
   }
 
-  const text = buildPlainTextStatement();
+  const text = buildMarkdownStatement();
   if (!text) return;
 
   const flashCopied = () => {
