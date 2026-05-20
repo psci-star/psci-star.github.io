@@ -647,13 +647,14 @@ test('copy/html: space sits inside the <strong> tag so it survives paste', () =>
   ok(/Funding: <\/strong>/.test(html), 'space is inside the bold tag');
 });
 
-test('copy/plaintext: exactly one space between label and body even if body has leading whitespace', () => {
-  // Simulate what buildPlainTextStatement does for a body that, for
-  // whatever reason, has a leading space.
+test('copy/markdown: exactly one space between label and body even if body has leading whitespace', () => {
+  // Simulate what buildMarkdownStatement does for a body that, for
+  // whatever reason, has a leading space. Label is wrapped in
+  // markdown bold but the single-space invariant still holds.
   const text   = '   This research received no funding.';
   const label  = 'Funding:';
-  const joined = `${label} ${text.replace(/^\s+/, '')}`;
-  eq(joined, 'Funding: This research received no funding.');
+  const joined = `**${label}** ${text.replace(/^\s+/, '')}`;
+  eq(joined, '**Funding:** This research received no funding.');
 });
 
 // ---- Hyperlinking the copy-output ----
