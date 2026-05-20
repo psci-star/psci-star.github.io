@@ -10,7 +10,9 @@
  *   $                   — short alias for getElementById.
  *   safeStorage         — localStorage that never throws.
  *   esc                 — HTML-escape any string.
- *   isValidUrl          — quick http(s) protocol check.
+ *   isValidUrl          — http(s) check; requires hostname with
+ *                         a real-looking TLD (rejects unfinished
+ *                         links like "https://google").
  *   normalizeWhitespace — collapse runs of whitespace.
  *   renderPolicy        — apply the RR overlay onto cfg, in place.
  *                         Both apps call this so the policy
@@ -67,7 +69,20 @@
     if (!s) return false;
     try {
       const u = new URL(s);
-      return u.protocol === 'http:' || u.protocol === 'https:';
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+      // Catch unfinished links like "https://google" — require the
+      // hostname to contain a dot and end in a TLD of at least 2
+      // characters that includes a letter. This rejects bare hosts,
+      // trailing-dot hosts, and IP-literal hosts (which are never
+      // appropriate for a public research link) while still allowing
+      // ordinary domains like osf.io and doi.org.
+      const host = u.hostname || '';
+      const lastDot = host.lastIndexOf('.');
+      if (lastDot < 1 || lastDot === host.length - 1) return false;
+      const tld = host.slice(lastDot + 1);
+      if (tld.length < 2) return false;
+      if (!/[a-zA-Z]/.test(tld)) return false;
+      return true;
     } catch { return false; }
   }
 
